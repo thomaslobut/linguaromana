@@ -42,6 +42,10 @@
                     <span>Mots sauvegardés</span>
                     <span class="saved-count" id="saved-count">0</span>
                 </button>
+                <button class="action-btn admin-btn" id="admin-btn">
+                    <i class="fas fa-cog"></i>
+                    <span>Admin</span>
+                </button>
                 <button class="action-btn" id="home-btn" style="display: none;">
                     <i class="fas fa-home"></i>
                     <span>Accueil</span>
@@ -260,6 +264,264 @@
                         <i class="fas fa-bookmark-o"></i>
                         <h4>Aucun mot sauvegardé</h4>
                         <p>Cliquez sur les mots surlignés dans les articles pour les sauvegarder et créer votre dictionnaire personnel.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Admin Section -->
+            <section class="admin-section" id="admin-section" style="display: none;">
+                <!-- Admin Authentication -->
+                <div class="admin-auth" id="admin-auth">
+                    <div class="auth-container">
+                        <h3>🔐 Accès Administrateur</h3>
+                        <p>Entrez le mot de passe pour accéder aux outils d'administration</p>
+                        <div class="auth-form">
+                            <input type="password" id="admin-password" placeholder="Mot de passe admin">
+                            <button id="admin-login-btn" class="admin-login-btn">
+                                <i class="fas fa-unlock"></i>
+                                Se connecter
+                            </button>
+                        </div>
+                        <div class="auth-error" id="auth-error" style="display: none;">
+                            ❌ Mot de passe incorrect
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admin Dashboard -->
+                <div class="admin-dashboard" id="admin-dashboard" style="display: none;">
+                    <div class="admin-header">
+                        <h3>⚙️ Panel d'Administration</h3>
+                        <button id="admin-logout-btn" class="logout-btn">
+                            <i class="fas fa-sign-out-alt"></i>
+                            Déconnexion
+                        </button>
+                    </div>
+
+                    <div class="admin-tabs">
+                        <button class="admin-tab active" data-tab="articles">
+                            <i class="fas fa-newspaper"></i>
+                            Gestion Articles
+                        </button>
+                        <button class="admin-tab" data-tab="words">
+                            <i class="fas fa-language"></i>
+                            Dictionnaire
+                        </button>
+                        <button class="admin-tab" data-tab="settings">
+                            <i class="fas fa-cogs"></i>
+                            Paramètres
+                        </button>
+                    </div>
+
+                    <!-- Articles Management Tab -->
+                    <div class="admin-tab-content" id="tab-articles">
+                        <div class="tab-header">
+                            <h4>📰 Gestion des Articles</h4>
+                            <button id="new-article-btn" class="action-btn">
+                                <i class="fas fa-plus"></i>
+                                Nouvel Article
+                            </button>
+                        </div>
+
+                        <!-- Article Editor -->
+                        <div class="article-editor" id="article-editor" style="display: none;">
+                            <div class="editor-header">
+                                <h5 id="editor-title">✍️ Nouvel Article</h5>
+                                <div class="editor-actions">
+                                    <button id="save-article-btn" class="save-btn">
+                                        <i class="fas fa-save"></i>
+                                        Enregistrer
+                                    </button>
+                                    <button id="cancel-edit-btn" class="cancel-btn">
+                                        <i class="fas fa-times"></i>
+                                        Annuler
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="editor-form">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="article-title">Titre de l'article</label>
+                                        <input type="text" id="article-title" placeholder="Ex: La inteligencia artificial revoluciona la medicina">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="article-date">Date</label>
+                                        <input type="date" id="article-date">
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="article-content">Contenu de l'article</label>
+                                    <textarea id="article-content" rows="8" placeholder="Écrivez le contenu de l'article ici. Utilisez [mot-clé] pour marquer les mots qui auront des traductions."></textarea>
+                                    <div class="editor-help">
+                                        💡 <strong>Astuce:</strong> Entourez les mots-clés avec des crochets [comme-ceci] pour les rendre cliquables
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="article-summary">Résumé (optionnel)</label>
+                                    <textarea id="article-summary" rows="3" placeholder="Bref résumé de l'article"></textarea>
+                                </div>
+
+                                <div class="keywords-section">
+                                    <h6>🔤 Mots-clés détectés</h6>
+                                    <div class="detected-keywords" id="detected-keywords">
+                                        <p class="no-keywords">Aucun mot-clé détecté. Utilisez [mot-clé] dans le contenu.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Articles List -->
+                        <div class="articles-list" id="articles-list">
+                            <div class="list-header">
+                                <h5>📚 Articles Existants</h5>
+                                <div class="list-controls">
+                                    <select id="article-status-filter">
+                                        <option value="all">Tous les articles</option>
+                                        <option value="published">Publiés</option>
+                                        <option value="draft">Brouillons</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="articles-grid" id="articles-grid">
+                                <!-- Articles will be rendered here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Words Management Tab -->
+                    <div class="admin-tab-content" id="tab-words" style="display: none;">
+                        <div class="tab-header">
+                            <h4>🔤 Gestion du Dictionnaire</h4>
+                            <button id="new-word-btn" class="action-btn">
+                                <i class="fas fa-plus"></i>
+                                Nouveau Mot
+                            </button>
+                        </div>
+
+                        <!-- Word Editor -->
+                        <div class="word-editor" id="word-editor" style="display: none;">
+                            <div class="editor-header">
+                                <h5 id="word-editor-title">➕ Nouveau Mot</h5>
+                                <div class="editor-actions">
+                                    <button id="save-word-btn" class="save-btn">
+                                        <i class="fas fa-save"></i>
+                                        Enregistrer
+                                    </button>
+                                    <button id="cancel-word-btn" class="cancel-btn">
+                                        <i class="fas fa-times"></i>
+                                        Annuler
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="word-form">
+                                <div class="form-group">
+                                    <label for="word-key">Mot-clé</label>
+                                    <input type="text" id="word-key" placeholder="Ex: engañan">
+                                </div>
+
+                                <div class="translations-editor">
+                                    <h6>🌍 Traductions</h6>
+                                    <div class="translation-inputs">
+                                        <div class="translation-input">
+                                            <label>🇪🇸 Español</label>
+                                            <input type="text" id="trans-input-es" placeholder="Ex: engañan (verbo: engañar - deceive)">
+                                        </div>
+                                        <div class="translation-input">
+                                            <label>🇮🇹 Italiano</label>
+                                            <input type="text" id="trans-input-it" placeholder="Ex: ingannano (verbo: ingannare)">
+                                        </div>
+                                        <div class="translation-input">
+                                            <label>🇵🇹 Português</label>
+                                            <input type="text" id="trans-input-pt" placeholder="Ex: enganam (verbo: enganar)">
+                                        </div>
+                                        <div class="translation-input">
+                                            <label>🏴󠁥󠁳󠁣󠁴󠁿 Català</label>
+                                            <input type="text" id="trans-input-ca" placeholder="Ex: enganyen (verb: enganyar)">
+                                        </div>
+                                        <div class="translation-input">
+                                            <label>🇫🇷 Français</label>
+                                            <input type="text" id="trans-input-fr" placeholder="Ex: trompent (verbe: tromper)">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="word-grammar">Note grammaticale</label>
+                                    <textarea id="word-grammar" rows="3" placeholder="Ex: Tercera persona del plural del presente de indicativo del verbo 'engañar'. Expresa una acción habitual o universal."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Words List -->
+                        <div class="words-list" id="words-list">
+                            <div class="list-header">
+                                <h5>📖 Dictionnaire Existant</h5>
+                                <div class="list-controls">
+                                    <input type="text" id="word-search" placeholder="Rechercher un mot...">
+                                    <select id="word-lang-filter">
+                                        <option value="all">Toutes les langues</option>
+                                        <option value="es">Español</option>
+                                        <option value="it">Italiano</option>
+                                        <option value="pt">Português</option>
+                                        <option value="ca">Català</option>
+                                        <option value="fr">Français</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="words-grid" id="words-grid">
+                                <!-- Words will be rendered here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Settings Tab -->
+                    <div class="admin-tab-content" id="tab-settings" style="display: none;">
+                        <div class="tab-header">
+                            <h4>⚙️ Paramètres</h4>
+                        </div>
+
+                        <div class="settings-content">
+                            <div class="setting-group">
+                                <h5>🔐 Sécurité</h5>
+                                <div class="setting-item">
+                                    <label for="new-password">Nouveau mot de passe admin</label>
+                                    <input type="password" id="new-password" placeholder="Nouveau mot de passe">
+                                    <button id="change-password-btn" class="action-btn">
+                                        <i class="fas fa-key"></i>
+                                        Changer
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="setting-group">
+                                <h5>📊 Données</h5>
+                                <div class="setting-item">
+                                    <button id="export-all-btn" class="action-btn">
+                                        <i class="fas fa-download"></i>
+                                        Exporter toutes les données
+                                    </button>
+                                    <button id="import-data-btn" class="action-btn">
+                                        <i class="fas fa-upload"></i>
+                                        Importer des données
+                                    </button>
+                                    <input type="file" id="import-file" style="display: none;" accept=".json">
+                                </div>
+                            </div>
+
+                            <div class="setting-group danger-zone">
+                                <h5>⚠️ Zone Dangereuse</h5>
+                                <div class="setting-item">
+                                    <button id="reset-all-btn" class="danger-btn">
+                                        <i class="fas fa-trash"></i>
+                                        Réinitialiser toutes les données
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>

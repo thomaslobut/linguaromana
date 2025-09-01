@@ -770,6 +770,692 @@ saveAnimationCSS.textContent = `
 `;
 document.head.appendChild(saveAnimationCSS);
 
+// Admin Management System
+class AdminManager {
+    constructor() {
+        this.adminPassword = 'admin123'; // In production, this should be more secure
+        this.isAuthenticated = false;
+        this.currentTab = 'articles';
+        this.customArticles = this.loadCustomArticles();
+        this.customWords = this.loadCustomWords();
+        this.currentEditingArticle = null;
+        this.currentEditingWord = null;
+        
+        this.initializeEventListeners();
+    }
+
+    loadCustomArticles() {
+        try {
+            const saved = localStorage.getItem('linguaromana_custom_articles');
+            return saved ? JSON.parse(saved) : [];
+        } catch (error) {
+            console.error('Error loading custom articles:', error);
+            return [];
+        }
+    }
+
+    saveCustomArticles() {
+        try {
+            localStorage.setItem('linguaromana_custom_articles', JSON.stringify(this.customArticles));
+        } catch (error) {
+            console.error('Error saving custom articles:', error);
+        }
+    }
+
+    loadCustomWords() {
+        try {
+            const saved = localStorage.getItem('linguaromana_custom_words');
+            return saved ? JSON.parse(saved) : {};
+        } catch (error) {
+            console.error('Error loading custom words:', error);
+            return {};
+        }
+    }
+
+    saveCustomWords() {
+        try {
+            localStorage.setItem('linguaromana_custom_words', JSON.stringify(this.customWords));
+            // Update global translations object
+            Object.assign(translations, this.customWords);
+        } catch (error) {
+            console.error('Error saving custom words:', error);
+        }
+    }
+
+    initializeEventListeners() {
+        // Admin button click
+        document.getElementById('admin-btn').addEventListener('click', () => {
+            this.showAdminSection();
+        });
+
+        // Authentication
+        document.getElementById('admin-login-btn').addEventListener('click', () => {
+            this.authenticate();
+        });
+
+        document.getElementById('admin-password').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.authenticate();
+            }
+        });
+
+        // Logout
+        document.getElementById('admin-logout-btn').addEventListener('click', () => {
+            this.logout();
+        });
+
+        // Admin tabs
+        document.querySelectorAll('.admin-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                this.switchTab(e.currentTarget.dataset.tab);
+            });
+        });
+
+        // Article management
+        document.getElementById('new-article-btn').addEventListener('click', () => {
+            this.showArticleEditor();
+        });
+
+        document.getElementById('save-article-btn').addEventListener('click', () => {
+            this.saveArticle();
+        });
+
+        document.getElementById('cancel-edit-btn').addEventListener('click', () => {
+            this.hideArticleEditor();
+        });
+
+        // Word management  
+        document.getElementById('new-word-btn').addEventListener('click', () => {
+            this.showWordEditor();
+        });
+
+        document.getElementById('save-word-btn').addEventListener('click', () => {
+            this.saveWord();
+        });
+
+        document.getElementById('cancel-word-btn').addEventListener('click', () => {
+            this.hideWordEditor();
+        });
+
+        // Content detection
+        document.getElementById('article-content').addEventListener('input', () => {
+            this.detectKeywords();
+        });
+
+        // Search and filters
+        document.getElementById('word-search').addEventListener('input', () => {
+            this.filterWords();
+        });
+
+        document.getElementById('word-lang-filter').addEventListener('change', () => {
+            this.filterWords();
+        });
+
+        // Settings
+        document.getElementById('change-password-btn').addEventListener('click', () => {
+            this.changePassword();
+        });
+
+        document.getElementById('export-all-btn').addEventListener('click', () => {
+            this.exportAllData();
+        });
+
+        document.getElementById('import-data-btn').addEventListener('click', () => {
+            document.getElementById('import-file').click();
+        });
+
+        document.getElementById('import-file').addEventListener('change', (e) => {
+            this.importData(e);
+        });
+
+        document.getElementById('reset-all-btn').addEventListener('click', () => {
+            this.resetAllData();
+        });
+    }
+
+    showAdminSection() {
+        // Hide other sections
+        document.querySelector('.article-section').style.display = 'none';
+        document.querySelector('.grammar-section').style.display = 'none';
+        document.querySelector('.quiz-section').style.display = 'none';
+        document.getElementById('saved-words-section').style.display = 'none';
+        
+        // Show admin section
+        document.getElementById('admin-section').style.display = 'block';
+        document.getElementById('admin-btn').style.display = 'none';
+        document.getElementById('saved-words-btn').style.display = 'none';
+        document.getElementById('home-btn').style.display = 'block';
+
+        // Show appropriate admin view
+        if (this.isAuthenticated) {
+            document.getElementById('admin-auth').style.display = 'none';
+            document.getElementById('admin-dashboard').style.display = 'block';
+            this.renderDashboard();
+        } else {
+            document.getElementById('admin-auth').style.display = 'block';
+            document.getElementById('admin-dashboard').style.display = 'none';
+        }
+    }
+
+    authenticate() {
+        const password = document.getElementById('admin-password').value;
+        const errorDiv = document.getElementById('auth-error');
+
+        if (password === this.adminPassword) {
+            this.isAuthenticated = true;
+            document.getElementById('admin-auth').style.display = 'none';
+            document.getElementById('admin-dashboard').style.display = 'block';
+            errorDiv.style.display = 'none';
+            this.renderDashboard();
+        } else {
+            errorDiv.style.display = 'block';
+            document.getElementById('admin-password').value = '';
+        }
+    }
+
+    logout() {
+        this.isAuthenticated = false;
+        document.getElementById('admin-password').value = '';
+        this.showAdminSection();
+    }
+
+    switchTab(tabName) {
+        this.currentTab = tabName;
+        
+        // Update active tab
+        document.querySelectorAll('.admin-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+
+        // Show/hide tab content
+        document.querySelectorAll('.admin-tab-content').forEach(content => {
+            content.style.display = 'none';
+        });
+        document.getElementById(`tab-${tabName}`).style.display = 'block';
+
+        // Render content based on tab
+        switch(tabName) {
+            case 'articles':
+                this.renderArticles();
+                break;
+            case 'words':
+                this.renderWords();
+                break;
+            case 'settings':
+                this.renderSettings();
+                break;
+        }
+    }
+
+    renderDashboard() {
+        this.switchTab(this.currentTab);
+    }
+
+    // Article Management
+    showArticleEditor(article = null) {
+        this.currentEditingArticle = article;
+        const editor = document.getElementById('article-editor');
+        const title = document.getElementById('editor-title');
+        
+        if (article) {
+            title.textContent = '✏️ Modifier Article';
+            document.getElementById('article-title').value = article.title;
+            document.getElementById('article-date').value = article.date;
+            document.getElementById('article-content').value = article.content;
+            document.getElementById('article-summary').value = article.summary || '';
+        } else {
+            title.textContent = '✍️ Nouvel Article';
+            document.getElementById('article-title').value = '';
+            document.getElementById('article-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('article-content').value = '';
+            document.getElementById('article-summary').value = '';
+        }
+
+        editor.style.display = 'block';
+        document.getElementById('articles-list').style.display = 'none';
+        this.detectKeywords();
+    }
+
+    hideArticleEditor() {
+        document.getElementById('article-editor').style.display = 'none';
+        document.getElementById('articles-list').style.display = 'block';
+        this.currentEditingArticle = null;
+    }
+
+    detectKeywords() {
+        const content = document.getElementById('article-content').value;
+        const keywordRegex = /\[([^\]]+)\]/g;
+        const keywords = [];
+        let match;
+
+        while ((match = keywordRegex.exec(content)) !== null) {
+            keywords.push(match[1]);
+        }
+
+        const container = document.getElementById('detected-keywords');
+        
+        if (keywords.length === 0) {
+            container.innerHTML = '<p class="no-keywords">Aucun mot-clé détecté. Utilisez [mot-clé] dans le contenu.</p>';
+        } else {
+            const uniqueKeywords = [...new Set(keywords)];
+            container.innerHTML = uniqueKeywords.map(keyword => {
+                const hasTranslation = translations[keyword] || this.customWords[keyword];
+                const chipClass = hasTranslation ? 'keyword-chip' : 'keyword-chip missing';
+                return `<span class="${chipClass}" onclick="adminManager.editKeyword('${keyword}')">${keyword}</span>`;
+            }).join('');
+        }
+    }
+
+    editKeyword(keyword) {
+        const existing = translations[keyword] || this.customWords[keyword];
+        if (existing) {
+            this.showWordEditor(keyword, existing);
+            this.switchTab('words');
+        } else {
+            if (confirm(`Le mot "${keyword}" n'a pas de traduction. Voulez-vous l'ajouter maintenant ?`)) {
+                this.showWordEditor(keyword);
+                this.switchTab('words');
+            }
+        }
+    }
+
+    saveArticle() {
+        const title = document.getElementById('article-title').value.trim();
+        const date = document.getElementById('article-date').value;
+        const content = document.getElementById('article-content').value.trim();
+        const summary = document.getElementById('article-summary').value.trim();
+
+        if (!title || !content) {
+            alert('Le titre et le contenu sont obligatoires');
+            return;
+        }
+
+        const article = {
+            id: this.currentEditingArticle ? this.currentEditingArticle.id : Date.now(),
+            title,
+            date,
+            content,
+            summary,
+            status: 'published',
+            createdAt: this.currentEditingArticle ? this.currentEditingArticle.createdAt : new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        if (this.currentEditingArticle) {
+            const index = this.customArticles.findIndex(a => a.id === this.currentEditingArticle.id);
+            this.customArticles[index] = article;
+        } else {
+            this.customArticles.unshift(article);
+        }
+
+        this.saveCustomArticles();
+        this.hideArticleEditor();
+        this.renderArticles();
+        this.showMessage('Article sauvegardé avec succès !', 'success');
+    }
+
+    renderArticles() {
+        const grid = document.getElementById('articles-grid');
+        
+        if (this.customArticles.length === 0) {
+            grid.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 2rem;">Aucun article personnalisé créé.</p>';
+            return;
+        }
+
+        const articlesHTML = this.customArticles.map(article => {
+            const date = new Date(article.date).toLocaleDateString('fr-FR');
+            const preview = article.content.substring(0, 150) + '...';
+            
+            return `
+                <div class="admin-item-card">
+                    <div class="admin-item-header">
+                        <h6 class="admin-item-title">${article.title}</h6>
+                        <div class="admin-item-actions">
+                            <button class="admin-action-btn edit-btn" onclick="adminManager.editArticle(${article.id})">
+                                <i class="fas fa-edit"></i>
+                                Modifier
+                            </button>
+                            <button class="admin-action-btn publish-btn" onclick="adminManager.useArticle(${article.id})">
+                                <i class="fas fa-eye"></i>
+                                Utiliser
+                            </button>
+                            <button class="admin-action-btn delete-btn" onclick="adminManager.deleteArticle(${article.id})">
+                                <i class="fas fa-trash"></i>
+                                Supprimer
+                            </button>
+                        </div>
+                    </div>
+                    <div class="admin-item-meta">
+                        Créé le ${date} • ${article.status}
+                    </div>
+                    <div class="admin-item-content">
+                        ${preview}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        grid.innerHTML = articlesHTML;
+    }
+
+    editArticle(articleId) {
+        const article = this.customArticles.find(a => a.id === articleId);
+        if (article) {
+            this.showArticleEditor(article);
+        }
+    }
+
+    deleteArticle(articleId) {
+        if (confirm('Êtes-vous sûr de vouloir supprimer cet article ?')) {
+            this.customArticles = this.customArticles.filter(a => a.id !== articleId);
+            this.saveCustomArticles();
+            this.renderArticles();
+            this.showMessage('Article supprimé avec succès !', 'success');
+        }
+    }
+
+    useArticle(articleId) {
+        const article = this.customArticles.find(a => a.id === articleId);
+        if (article) {
+            this.loadArticleIntoMain(article);
+            savedWordsManager.showHomeSection(); // Return to main view
+            this.showMessage('Article chargé dans la vue principale !', 'success');
+        }
+    }
+
+    loadArticleIntoMain(article) {
+        // Replace main article content
+        document.querySelector('.article-header h2').textContent = article.title;
+        document.querySelector('.article-date').textContent = new Date(article.date).toLocaleDateString('fr-FR');
+        
+        // Process content and make keywords clickable
+        let processedContent = article.content.replace(/\[([^\]]+)\]/g, '<span class="keyword" onclick="showTranslation(\'$1\')">$1</span>');
+        document.querySelector('.article-content p').innerHTML = processedContent;
+
+        // Update quiz if needed
+        this.generateQuizFromArticle(article);
+    }
+
+    generateQuizFromArticle(article) {
+        // Extract keywords for quiz generation
+        const keywordRegex = /\[([^\]]+)\]/g;
+        const keywords = [];
+        let match;
+
+        while ((match = keywordRegex.exec(article.content)) !== null) {
+            if (translations[match[1]] || this.customWords[match[1]]) {
+                keywords.push(match[1]);
+            }
+        }
+
+        // This is a simplified quiz generation - in a real app you'd want more sophisticated logic
+        if (keywords.length >= 3) {
+            console.log('Generated quiz keywords:', keywords.slice(0, 3));
+        }
+    }
+
+    // Word Management
+    showWordEditor(word = null, wordData = null) {
+        this.currentEditingWord = word;
+        const editor = document.getElementById('word-editor');
+        const title = document.getElementById('word-editor-title');
+        
+        if (word && wordData) {
+            title.textContent = '✏️ Modifier Mot';
+            document.getElementById('word-key').value = word;
+            document.getElementById('trans-input-es').value = wordData.es || '';
+            document.getElementById('trans-input-it').value = wordData.it || '';
+            document.getElementById('trans-input-pt').value = wordData.pt || '';
+            document.getElementById('trans-input-ca').value = wordData.ca || '';
+            document.getElementById('trans-input-fr').value = wordData.fr || '';
+            document.getElementById('word-grammar').value = wordData.grammar || '';
+        } else if (word) {
+            title.textContent = `➕ Ajouter "${word}"`;
+            document.getElementById('word-key').value = word;
+            // Clear other fields
+            document.getElementById('trans-input-es').value = '';
+            document.getElementById('trans-input-it').value = '';
+            document.getElementById('trans-input-pt').value = '';
+            document.getElementById('trans-input-ca').value = '';
+            document.getElementById('trans-input-fr').value = '';
+            document.getElementById('word-grammar').value = '';
+        } else {
+            title.textContent = '➕ Nouveau Mot';
+            // Clear all fields
+            document.getElementById('word-key').value = '';
+            document.getElementById('trans-input-es').value = '';
+            document.getElementById('trans-input-it').value = '';
+            document.getElementById('trans-input-pt').value = '';
+            document.getElementById('trans-input-ca').value = '';
+            document.getElementById('trans-input-fr').value = '';
+            document.getElementById('word-grammar').value = '';
+        }
+
+        editor.style.display = 'block';
+        document.getElementById('words-list').style.display = 'none';
+    }
+
+    hideWordEditor() {
+        document.getElementById('word-editor').style.display = 'none';
+        document.getElementById('words-list').style.display = 'block';
+        this.currentEditingWord = null;
+    }
+
+    saveWord() {
+        const word = document.getElementById('word-key').value.trim();
+        const es = document.getElementById('trans-input-es').value.trim();
+        const it = document.getElementById('trans-input-it').value.trim();
+        const pt = document.getElementById('trans-input-pt').value.trim();
+        const ca = document.getElementById('trans-input-ca').value.trim();
+        const fr = document.getElementById('trans-input-fr').value.trim();
+        const grammar = document.getElementById('word-grammar').value.trim();
+
+        if (!word) {
+            alert('Le mot-clé est obligatoire');
+            return;
+        }
+
+        if (!es && !it && !pt && !ca && !fr) {
+            alert('Au moins une traduction est requise');
+            return;
+        }
+
+        const wordData = {
+            es: es || '',
+            it: it || '',
+            pt: pt || '',
+            ca: ca || '',
+            fr: fr || '',
+            grammar: grammar || ''
+        };
+
+        this.customWords[word] = wordData;
+        this.saveCustomWords();
+        this.hideWordEditor();
+        this.renderWords();
+        this.showMessage('Mot sauvegardé avec succès !', 'success');
+    }
+
+    renderWords() {
+        const grid = document.getElementById('words-grid');
+        const allWords = {...translations, ...this.customWords};
+        const wordsArray = Object.entries(allWords);
+        
+        if (wordsArray.length === 0) {
+            grid.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 2rem;">Aucun mot dans le dictionnaire.</p>';
+            return;
+        }
+
+        const wordsHTML = wordsArray.map(([word, data]) => {
+            const isCustom = this.customWords[word] !== undefined;
+            const languages = Object.entries(data)
+                .filter(([key, value]) => key !== 'grammar' && value)
+                .map(([key, value]) => `${key.toUpperCase()}: ${value}`)
+                .join(' • ');
+            
+            return `
+                <div class="admin-item-card">
+                    <div class="admin-item-header">
+                        <h6 class="admin-item-title">
+                            ${word}
+                            ${isCustom ? '<span style="color: #007bff; font-size: 0.7rem;">(CUSTOM)</span>' : ''}
+                        </h6>
+                        <div class="admin-item-actions">
+                            <button class="admin-action-btn edit-btn" onclick="adminManager.editWord('${word}')">
+                                <i class="fas fa-edit"></i>
+                                Modifier
+                            </button>
+                            ${isCustom ? `
+                                <button class="admin-action-btn delete-btn" onclick="adminManager.deleteWord('${word}')">
+                                    <i class="fas fa-trash"></i>
+                                    Supprimer
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                    <div class="admin-item-content" style="font-size: 0.8rem;">
+                        ${languages}
+                    </div>
+                    ${data.grammar ? `<div class="admin-item-meta">${data.grammar}</div>` : ''}
+                </div>
+            `;
+        }).join('');
+
+        grid.innerHTML = wordsHTML;
+    }
+
+    editWord(word) {
+        const wordData = this.customWords[word] || translations[word];
+        this.showWordEditor(word, wordData);
+    }
+
+    deleteWord(word) {
+        if (confirm(`Êtes-vous sûr de vouloir supprimer le mot "${word}" ?`)) {
+            delete this.customWords[word];
+            this.saveCustomWords();
+            this.renderWords();
+            this.showMessage('Mot supprimé avec succès !', 'success');
+        }
+    }
+
+    filterWords() {
+        // This would implement search and filter functionality
+        // For now, just re-render
+        this.renderWords();
+    }
+
+    // Settings
+    renderSettings() {
+        // Settings are already in HTML, just update if needed
+    }
+
+    changePassword() {
+        const newPassword = document.getElementById('new-password').value;
+        if (newPassword && newPassword.length >= 6) {
+            this.adminPassword = newPassword;
+            localStorage.setItem('linguaromana_admin_password', newPassword);
+            document.getElementById('new-password').value = '';
+            this.showMessage('Mot de passe changé avec succès !', 'success');
+        } else {
+            this.showMessage('Le mot de passe doit contenir au moins 6 caractères', 'error');
+        }
+    }
+
+    exportAllData() {
+        const data = {
+            articles: this.customArticles,
+            words: this.customWords,
+            exportDate: new Date().toISOString()
+        };
+
+        const dataStr = JSON.stringify(data, null, 2);
+        const dataBlob = new Blob([dataStr], {type: 'application/json'});
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(dataBlob);
+        link.download = `linguaromana_admin_export_${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+
+        this.showMessage('Données exportées avec succès !', 'success');
+    }
+
+    importData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+                
+                if (data.articles) {
+                    this.customArticles = [...this.customArticles, ...data.articles];
+                    this.saveCustomArticles();
+                }
+                
+                if (data.words) {
+                    Object.assign(this.customWords, data.words);
+                    this.saveCustomWords();
+                }
+
+                this.renderDashboard();
+                this.showMessage('Données importées avec succès !', 'success');
+            } catch (error) {
+                this.showMessage('Erreur lors de l\'importation des données', 'error');
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    resetAllData() {
+        if (confirm('⚠️ ATTENTION: Cette action supprimera TOUTES les données personnalisées (articles et mots). Cette action est irréversible. Continuer ?')) {
+            this.customArticles = [];
+            this.customWords = {};
+            this.saveCustomArticles();
+            this.saveCustomWords();
+            this.renderDashboard();
+            this.showMessage('Toutes les données ont été réinitialisées', 'warning');
+        }
+    }
+
+    showMessage(message, type = 'success') {
+        // Create message element
+        const messageEl = document.createElement('div');
+        messageEl.className = `admin-message ${type}`;
+        messageEl.innerHTML = `
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'}"></i>
+            ${message}
+        `;
+
+        // Insert at top of current tab
+        const activeTab = document.querySelector('.admin-tab-content[style*="block"]');
+        if (activeTab) {
+            activeTab.insertBefore(messageEl, activeTab.firstChild);
+            
+            // Auto-remove after 3 seconds
+            setTimeout(() => {
+                if (messageEl.parentNode) {
+                    messageEl.parentNode.removeChild(messageEl);
+                }
+            }, 3000);
+        }
+    }
+}
+
+// Initialize admin manager
+const adminManager = new AdminManager();
+
+// Update home button click handler to hide admin
+const originalHomeBtn = document.getElementById('home-btn');
+originalHomeBtn.addEventListener('click', () => {
+    // Hide admin section
+    document.getElementById('admin-section').style.display = 'none';
+    document.getElementById('admin-btn').style.display = 'block';
+    document.getElementById('saved-words-btn').style.display = 'block';
+});
+
 console.log('🌟 LinguaRomana MVP initialized successfully!');
 console.log('📚 Ready to learn with news articles in Romance languages!');
 console.log('💾 Saved Words feature loaded!');
+console.log('⚙️ Admin panel loaded!');
