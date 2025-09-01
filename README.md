@@ -9,8 +9,11 @@ Un site d'apprentissage des langues romanes (espagnol, italien, portugais, catal
 - **Articles d'actualité simplifiés** : Contenu adapté pour l'apprentissage des langues
 - **Mots-clés interactifs** : Cliquez sur les mots surlignés pour voir les traductions dans les 5 langues romanes
 - **Notes grammaticales** : Explications contextuelles pour chaque mot-clé
+- **Sauvegarde de mots** : Créez votre dictionnaire personnel en sauvegardant vos mots favoris
+- **Organisation par langue** : Consultez vos mots sauvegardés classés par langue romane
 - **Quiz de compréhension** : Testez votre compréhension avec des QCM interactifs
 - **Système de gamification** : Gagnez des points et maintenez votre série quotidienne (flammes)
+- **Export de données** : Exportez votre dictionnaire personnel au format JSON
 - **Interface moderne** : Design responsive inspiré des meilleures applications d'apprentissage
 
 ### 🗣️ Langues supportées
@@ -34,9 +37,12 @@ L'article actuel traite de la **crise humanitaire à Gaza** et des controverses 
 1. **Ouvrez `index.html`** dans votre navigateur
 2. **Lisez l'article** et cliquez sur les mots surlignés en violet
 3. **Explorez les traductions** dans les 5 langues romanes (consultation gratuite)
-4. **Lisez les notes grammaticales** pour approfondir votre compréhension
-5. **Répondez au quiz** pour tester votre compréhension et gagner des points
-6. **Maintenez votre série quotidienne** et progressez dans votre apprentissage !
+4. **Sauvegardez vos mots favoris** en cliquant sur "Sauvegarder ce mot" dans la popup
+5. **Consultez votre dictionnaire** en cliquant sur "Mots sauvegardés" dans l'en-tête
+6. **Organisez par langue** avec les onglets de filtrage
+7. **Exportez vos données** pour une sauvegarde externe
+8. **Répondez au quiz** pour tester votre compréhension et gagner des points
+9. **Maintenez votre série quotidienne** et progressez dans votre apprentissage !
 
 ## 🛠️ Structure du projet
 
@@ -111,6 +117,84 @@ Avant de pousser votre code, utilisez le script de validation :
 # Ou manuellement :
 cd backend && python run_streak_tests.py
 ```
+
+## 📚 Fonctionnalité de Sauvegarde de Mots
+
+### 🎯 Vue d'ensemble
+
+LinguaRomana permet aux utilisateurs de créer leur dictionnaire personnel en sauvegardant les mots rencontrés dans les articles.
+
+### ✨ Fonctionnalités
+
+- **💾 Sauvegarde instantanée** : Bouton dans chaque popup de traduction
+- **🗂️ Organisation par langue** : Filtrage automatique par langue romane
+- **📱 Interface intuitive** : Cartes visuelles avec toutes les traductions
+- **📤 Export JSON** : Sauvegarde externe de votre dictionnaire
+- **🗑️ Gestion complète** : Suppression individuelle ou en masse
+- **💾 Persistance locale** : Stockage dans le navigateur (localStorage)
+
+### 🎮 Comment utiliser
+
+#### 1. Sauvegarder un mot
+```
+1. Cliquez sur un mot-clé dans l'article
+2. Dans la popup, cliquez "Sauvegarder ce mot"
+3. Confirmation visuelle avec animation
+4. Le compteur de mots sauvegardés se met à jour
+```
+
+#### 2. Consulter vos mots
+```
+1. Cliquez sur "Mots sauvegardés" dans l'en-tête
+2. Naviguez entre les onglets de langue
+3. Consultez toutes les traductions et notes grammaticales
+4. Supprimez des mots individuellement si nécessaire
+```
+
+#### 3. Organiser par langue
+```
+- "Tous" : Affiche tous les mots sauvegardés
+- "Español" : Mots en espagnol uniquement
+- "Italiano" : Mots en italien uniquement
+- "Português" : Mots en portugais uniquement
+- "Català" : Mots en catalan uniquement
+- "Français" : Mots en français uniquement
+```
+
+#### 4. Exporter vos données
+```
+1. Cliquez sur "Exporter" dans la section mots sauvegardés
+2. Fichier JSON téléchargé automatiquement
+3. Format : linguaromana_mots_sauvegardes_YYYY-MM-DD.json
+```
+
+### 📊 Structure des données
+
+Chaque mot sauvegardé contient :
+
+```json
+{
+  "id": 1704067200000,
+  "word": "engañan",
+  "translations": {
+    "es": "engañan (verbo: engañar - deceive)",
+    "it": "ingannano (verbo: ingannare)",
+    "pt": "enganam (verbo: enganar)",
+    "ca": "enganyen (verb: enganyar)",
+    "fr": "trompent (verbe: tromper)"
+  },
+  "grammar": "Tercera persona del plural del presente de indicativo...",
+  "savedAt": "2024-01-01T12:00:00.000Z",
+  "language": "es"
+}
+```
+
+### 🔒 Persistance et sécurité
+
+- **Stockage local** : Utilise localStorage du navigateur
+- **Aucune donnée externe** : Tout reste sur votre appareil
+- **Sauvegarde recommandée** : Utilisez la fonction d'export régulièrement
+- **Compatible** : Fonctionne hors ligne une fois la page chargée
 
 ## 🔧 Personnalisation
 

@@ -49,8 +49,12 @@ const quizData = [
 let currentQuestion = 0;
 let userAnswers = [];
 let score = 0;
-let currentStreak = 7;
-let currentPoints = 2840;
+let currentStreak = window.USER_DATA?.profile?.currentStreak || 7;
+let currentPoints = window.USER_DATA?.profile?.totalPoints || 2840;
+
+// Authentication state
+const isAuthenticated = window.USER_DATA?.isAuthenticated || false;
+const currentUser = window.USER_DATA || null;
 
 // DOM elements
 const translationPopup = document.getElementById('translation-popup');
@@ -65,6 +69,11 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeQuiz();
     initializeLanguageButtons();
     updateProgress();
+    
+    // Initialize quiz timer if authenticated
+    if (isAuthenticated) {
+        quizStartTime = Date.now();
+    }
 });
 
 // Initialize clickable keywords
@@ -225,7 +234,7 @@ function updateNavigationButtons() {
     }
 }
 
-function submitQuiz() {
+async function submitQuiz() {
     // Calculate score
     score = 0;
     for (let i = 0; i < quizData.length; i++) {
@@ -239,12 +248,47 @@ function submitQuiz() {
     
     // Add points and update streak
     const pointsEarned = score * 10; // 10 points per correct answer
+    
+    // Submit to Django backend if authenticated
+    if (isAuthenticated) {
+        try {
+            const response = await fetch('/api/submit-quiz/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken(),
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    article_id: 1, // Default article ID
+                    score: (score / quizData.length) * 100, // Score as percentage
+                    points_earned: pointsEarned,
+                    time_spent: Date.now() - quizStartTime || null
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                currentPoints = data.total_points;
+                updateProgress();
+                console.log('Quiz result saved successfully');
+            } else {
+                console.error('Failed to save quiz result');
+            }
+        } catch (error) {
+            console.error('Error saving quiz result:', error);
+        }
+    }
+    
     addPoints(pointsEarned);
     updateStreak();
     
     // Show correct/incorrect answers
     highlightAnswers();
 }
+
+// Track quiz start time for time_spent calculation
+let quizStartTime = null;
 
 function showQuizResults() {
     const quizContainer = document.querySelector('.quiz-container');
@@ -256,7 +300,44 @@ function showQuizResults() {
     quizResults.style.display = 'block';
     
     scoreElement.textContent = score;
-    pointsEarned.textContent = score * 10;
+    const earnedPoints = score * 10;
+    pointsEarned.textContent = earnedPoints;
+    
+    // Show different messages for authenticated vs guest users
+    if (!isAuthenticated) {
+        showGuestMotivationMessage(earnedPoints);
+    }
+}
+
+function showGuestMotivationMessage(points) {
+    // Create motivation message for guest users
+    const motivationElement = document.createElement('div');
+    motivationElement.innerHTML = `
+        <div class="guest-motivation">
+            <h4>🎉 Excellent travail !</h4>
+            <p>Vous avez gagné <strong>${points} points</strong> mais ils ne sont pas sauvegardés.</p>
+            <p><strong>Créez un compte</strong> pour conserver vos points et débloquer :</p>
+            <ul>
+                <li>🔥 Séries quotidiennes (streaks)</li>
+                <li>🏆 Niveaux et badges</li>
+                <li>📊 Statistiques de progression</li>
+                <li>💾 Sauvegarde automatique</li>
+            </ul>
+            <div class="motivation-actions">
+                <a href="/register/" class="btn-register">
+                    <i class="fas fa-user-plus"></i>
+                    S'inscrire maintenant
+                </a>
+                <a href="/login/" class="btn-login">
+                    <i class="fas fa-sign-in-alt"></i>
+                    J'ai déjà un compte
+                </a>
+            </div>
+        </div>
+    `;
+    
+    const quizResults = document.getElementById('quiz-results');
+    quizResults.appendChild(motivationElement);
 }
 
 function highlightAnswers() {
@@ -288,6 +369,12 @@ function restartQuiz() {
     const quizResults = document.getElementById('quiz-results');
     const options = document.querySelectorAll('.option');
     
+    // Remove guest motivation message if it exists
+    const guestMotivation = quizResults.querySelector('.guest-motivation');
+    if (guestMotivation) {
+        guestMotivation.remove();
+    }
+    
     quizContainer.style.display = 'block';
     quizResults.style.display = 'none';
     
@@ -300,26 +387,88 @@ function restartQuiz() {
     showQuestion(0);
     updateQuestionCounter();
     updateNavigationButtons();
+    
+    // Reset timer for authenticated users
+    if (isAuthenticated) {
+        quizStartTime = Date.now();
+    }
 }
 
 // Gamification functions
 function addPoints(points) {
-    currentPoints += points;
-    updateProgress();
+    if (isAuthenticated) {
+        // For authenticated users, points are saved to backend
+        currentPoints += points;
+        updateProgress();
+        showPointsAnimation(points);
+    } else {
+        // For guest users, show temporary points but don't save
+        showGuestPointsAnimation(points);
+    }
+}
+
+function showGuestPointsAnimation(points) {
+    // Create a temporary element for guest points animation
+    const pointsElement = document.createElement('div');
+    pointsElement.textContent = `+${points} points temporaires!`;
+    pointsElement.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: linear-gradient(135deg, #ffc107, #ff6b35);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 15px;
+        font-weight: bold;
+        z-index: 1001;
+        animation: guestPointsFloat 3s ease-out forwards;
+        pointer-events: none;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+    `;
     
-    // Show point animation
-    showPointsAnimation(points);
+    // Add animation CSS for guest points
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes guestPointsFloat {
+            0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            30% { opacity: 1; transform: translate(-50%, -60%) scale(1.2); }
+            70% { opacity: 1; transform: translate(-50%, -70%) scale(1.1); }
+            100% { opacity: 0; transform: translate(-50%, -90%) scale(0.8); }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    document.body.appendChild(pointsElement);
+    
+    // Remove element after animation
+    setTimeout(() => {
+        if (document.body.contains(pointsElement)) {
+            document.body.removeChild(pointsElement);
+        }
+        if (document.head.contains(style)) {
+            document.head.removeChild(style);
+        }
+    }, 3000);
 }
 
 function updateStreak() {
-    // Simple streak logic - in a real app, this would be based on daily activity
-    currentStreak++;
-    updateProgress();
+    // Only update streak for authenticated users
+    if (isAuthenticated) {
+        // Simple streak logic - in a real app, this would be based on daily activity
+        currentStreak++;
+        updateProgress();
+    }
 }
 
 function updateProgress() {
-    streakCount.textContent = currentStreak;
-    pointsCount.textContent = currentPoints.toLocaleString();
+    // Only update progress elements if they exist (authenticated users)
+    if (streakCount) {
+        streakCount.textContent = currentStreak;
+    }
+    if (pointsCount) {
+        pointsCount.textContent = currentPoints.toLocaleString();
+    }
 }
 
 function showPointsAnimation(points) {
@@ -426,350 +575,39 @@ rippleStyle.textContent = `
 `;
 document.head.appendChild(rippleStyle);
 
-// Saved Words Management
-class SavedWordsManager {
-    constructor() {
-        this.savedWords = this.loadSavedWords();
-        this.currentWord = null;
-        this.currentFilter = 'all';
-        this.initializeEventListeners();
-        this.updateUI();
-    }
+// Utility functions for Django integration
+function getCsrfToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+           document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1] || '';
+}
 
-    loadSavedWords() {
-        try {
-            const saved = localStorage.getItem('linguaromana_saved_words');
-            return saved ? JSON.parse(saved) : [];
-        } catch (error) {
-            console.error('Error loading saved words:', error);
-            return [];
-        }
-    }
-
-    saveSavedWords() {
-        try {
-            localStorage.setItem('linguaromana_saved_words', JSON.stringify(this.savedWords));
-        } catch (error) {
-            console.error('Error saving words:', error);
-        }
-    }
-
-    saveWord(word, translations, grammar) {
-        // Check if word is already saved
-        const existingIndex = this.savedWords.findIndex(saved => saved.word === word);
-        
-        if (existingIndex !== -1) {
-            return false; // Word already saved
-        }
-
-        const savedWord = {
-            id: Date.now(),
-            word: word,
-            translations: translations,
-            grammar: grammar,
-            savedAt: new Date().toISOString(),
-            language: this.detectLanguage(word, translations)
-        };
-
-        this.savedWords.unshift(savedWord); // Add at beginning
-        this.saveSavedWords();
-        this.updateUI();
-        
-        return true;
-    }
-
-    detectLanguage(word, translations) {
-        // Try to detect the main language based on the word and translations
-        // For now, we'll use Spanish as default since our current words are in Spanish
-        return 'es';
-    }
-
-    removeWord(wordId) {
-        this.savedWords = this.savedWords.filter(word => word.id !== wordId);
-        this.saveSavedWords();
-        this.updateUI();
-    }
-
-    clearAllWords() {
-        if (confirm('Êtes-vous sûr de vouloir supprimer tous les mots sauvegardés ?')) {
-            this.savedWords = [];
-            this.saveSavedWords();
-            this.updateUI();
-        }
-    }
-
-    exportWords() {
-        if (this.savedWords.length === 0) {
-            alert('Aucun mot à exporter');
-            return;
-        }
-
-        const dataStr = JSON.stringify(this.savedWords, null, 2);
-        const dataBlob = new Blob([dataStr], {type: 'application/json'});
-        
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(dataBlob);
-        link.download = `linguaromana_mots_sauvegardes_${new Date().toISOString().split('T')[0]}.json`;
-        link.click();
-    }
-
-    getFilteredWords() {
-        if (this.currentFilter === 'all') {
-            return this.savedWords;
-        }
-        return this.savedWords.filter(word => word.language === this.currentFilter);
-    }
-
-    initializeEventListeners() {
-        // Save word button in popup
-        document.getElementById('save-word-btn').addEventListener('click', () => {
-            this.handleSaveCurrentWord();
-        });
-
-        // Saved words navigation
-        document.getElementById('saved-words-btn').addEventListener('click', () => {
-            this.showSavedWordsSection();
-        });
-
-        document.getElementById('home-btn').addEventListener('click', () => {
-            this.showHomeSection();
-        });
-
-        // Controls
-        document.getElementById('clear-all-words').addEventListener('click', () => {
-            this.clearAllWords();
-        });
-
-        document.getElementById('export-words').addEventListener('click', () => {
-            this.exportWords();
-        });
-
-        // Language filter tabs
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                this.setFilter(e.currentTarget.dataset.lang);
-            });
-        });
-    }
-
-    handleSaveCurrentWord() {
-        if (!this.currentWord) return;
-
-        const success = this.saveWord(
-            this.currentWord,
-            translations[this.currentWord],
-            translations[this.currentWord].grammar
-        );
-
-        const saveBtn = document.getElementById('save-word-btn');
-        if (success) {
-            saveBtn.innerHTML = '<i class="fas fa-check"></i> <span>Mot sauvegardé!</span>';
-            saveBtn.classList.add('saved');
-            saveBtn.disabled = true;
-            
-            // Show success animation
-            this.showSaveSuccessAnimation();
-        } else {
-            saveBtn.innerHTML = '<i class="fas fa-bookmark"></i> <span>Déjà sauvegardé</span>';
-            saveBtn.classList.add('saved');
-            saveBtn.disabled = true;
-        }
-    }
-
-    showSaveSuccessAnimation() {
-        // Create floating animation
-        const popup = document.getElementById('translation-popup');
-        const successIcon = document.createElement('div');
-        successIcon.innerHTML = '📚 +1';
-        successIcon.style.cssText = `
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 2rem;
-            font-weight: bold;
-            color: #28a745;
-            pointer-events: none;
-            animation: saveSuccess 2s ease-out forwards;
-            z-index: 1002;
-        `;
-        
-        popup.appendChild(successIcon);
-        
-        setTimeout(() => {
-            if (successIcon.parentNode) {
-                successIcon.parentNode.removeChild(successIcon);
-            }
-        }, 2000);
-    }
-
-    setCurrentWord(word) {
-        this.currentWord = word;
-        
-        // Update save button state
-        const saveBtn = document.getElementById('save-word-btn');
-        const isAlreadySaved = this.savedWords.some(saved => saved.word === word);
-        
-        if (isAlreadySaved) {
-            saveBtn.innerHTML = '<i class="fas fa-bookmark"></i> <span>Déjà sauvegardé</span>';
-            saveBtn.classList.add('saved');
-            saveBtn.disabled = true;
-        } else {
-            saveBtn.innerHTML = '<i class="fas fa-bookmark"></i> <span>Sauvegarder ce mot</span>';
-            saveBtn.classList.remove('saved');
-            saveBtn.disabled = false;
-        }
-    }
-
-    showSavedWordsSection() {
-        document.querySelector('.article-section').style.display = 'none';
-        document.querySelector('.grammar-section').style.display = 'none';
-        document.querySelector('.quiz-section').style.display = 'none';
-        document.getElementById('saved-words-section').style.display = 'block';
-        document.getElementById('saved-words-btn').style.display = 'none';
-        document.getElementById('home-btn').style.display = 'block';
-        
-        this.renderSavedWords();
-    }
-
-    showHomeSection() {
-        document.querySelector('.article-section').style.display = 'block';
-        document.querySelector('.grammar-section').style.display = 'block';
-        document.querySelector('.quiz-section').style.display = 'block';
-        document.getElementById('saved-words-section').style.display = 'none';
-        document.getElementById('saved-words-btn').style.display = 'block';
-        document.getElementById('home-btn').style.display = 'none';
-    }
-
-    setFilter(language) {
-        this.currentFilter = language;
-        
-        // Update active tab
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        document.querySelector(`[data-lang="${language}"]`).classList.add('active');
-        
-        this.renderSavedWords();
-    }
-
-    renderSavedWords() {
-        const container = document.getElementById('saved-words-content');
-        const filteredWords = this.getFilteredWords();
-        
-        if (filteredWords.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-bookmark-o"></i>
-                    <h4>Aucun mot sauvegardé${this.currentFilter !== 'all' ? ' dans cette langue' : ''}</h4>
-                    <p>Cliquez sur les mots surlignés dans les articles pour les sauvegarder et créer votre dictionnaire personnel.</p>
-                </div>
-            `;
-            return;
-        }
-
-        const wordsHTML = filteredWords.map(word => this.createWordCardHTML(word)).join('');
-        
-        container.innerHTML = `
-            <div class="saved-words-grid">
-                ${wordsHTML}
-            </div>
-        `;
-
-        // Add event listeners for remove buttons
-        container.querySelectorAll('.remove-word-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const wordId = parseInt(e.currentTarget.dataset.wordId);
-                this.removeWord(wordId);
-            });
-        });
-    }
-
-    createWordCardHTML(wordData) {
-        const date = new Date(wordData.savedAt).toLocaleDateString('fr-FR');
-        const translations = wordData.translations;
-        
-        return `
-            <div class="saved-word-card">
-                <div class="saved-word-header">
-                    <div>
-                        <h4 class="saved-word-title">${wordData.word}</h4>
-                        <div class="saved-word-date">Sauvegardé le ${date}</div>
-                    </div>
-                    <button class="remove-word-btn" data-word-id="${wordData.id}">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                
-                <div class="saved-translations">
-                    <div class="saved-translation">
-                        <div class="lang">Español</div>
-                        <div class="text">${translations.es}</div>
-                    </div>
-                    <div class="saved-translation">
-                        <div class="lang">Italiano</div>
-                        <div class="text">${translations.it}</div>
-                    </div>
-                    <div class="saved-translation">
-                        <div class="lang">Português</div>
-                        <div class="text">${translations.pt}</div>
-                    </div>
-                    <div class="saved-translation">
-                        <div class="lang">Català</div>
-                        <div class="text">${translations.ca}</div>
-                    </div>
-                    <div class="saved-translation">
-                        <div class="lang">Français</div>
-                        <div class="text">${translations.fr}</div>
-                    </div>
-                </div>
-                
-                <div class="saved-grammar">
-                    ${wordData.grammar}
-                </div>
-            </div>
-        `;
-    }
-
-    updateUI() {
-        // Update saved count badge
-        document.getElementById('saved-count').textContent = this.savedWords.length;
-        
-        // Update language tab counts
-        const languages = ['es', 'it', 'pt', 'ca', 'fr'];
-        languages.forEach(lang => {
-            const count = this.savedWords.filter(word => word.language === lang).length;
-            const countElement = document.getElementById(`count-${lang}`);
-            if (countElement) {
-                countElement.textContent = count;
-            }
+// Enhanced progress update with backend sync
+async function syncUserProgress() {
+    if (!isAuthenticated) return;
+    
+    try {
+        const response = await fetch('/api/profile/', {
+            credentials: 'include'
         });
         
-        document.getElementById('count-all').textContent = this.savedWords.length;
+        if (response.ok) {
+            const data = await response.json();
+            currentStreak = data.profile.current_streak;
+            currentPoints = data.profile.total_points;
+            updateProgress();
+        }
+    } catch (error) {
+        console.error('Error syncing user progress:', error);
     }
 }
 
-// Initialize saved words manager
-const savedWordsManager = new SavedWordsManager();
+// Sync progress on page load if authenticated
+if (isAuthenticated) {
+    syncUserProgress();
+}
 
-// Update the existing showTranslation function to set current word
-const originalShowTranslation = window.showTranslation;
-window.showTranslation = function(word) {
-    originalShowTranslation(word);
-    savedWordsManager.setCurrentWord(word);
-};
-
-// Add CSS animation for save success
-const saveAnimationCSS = document.createElement('style');
-saveAnimationCSS.textContent = `
-    @keyframes saveSuccess {
-        0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-        50% { opacity: 1; transform: translate(-50%, -60%) scale(1.3); }
-        100% { opacity: 0; transform: translate(-50%, -80%) scale(0.8); }
-    }
-`;
-document.head.appendChild(saveAnimationCSS);
-
-console.log('🌟 LinguaRomana MVP initialized successfully!');
+console.log('🌟 LinguaRomana with Django authentication initialized successfully!');
 console.log('📚 Ready to learn with news articles in Romance languages!');
-console.log('💾 Saved Words feature loaded!');
+if (isAuthenticated) {
+    console.log(`👋 Welcome back, ${currentUser.username}!`);
+}

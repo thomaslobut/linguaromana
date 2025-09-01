@@ -36,6 +36,18 @@
                 </button>
             </nav>
 
+            <nav class="nav-actions">
+                <button class="action-btn" id="saved-words-btn">
+                    <i class="fas fa-bookmark"></i>
+                    <span>Mots sauvegardés</span>
+                    <span class="saved-count" id="saved-count">0</span>
+                </button>
+                <button class="action-btn" id="home-btn" style="display: none;">
+                    <i class="fas fa-home"></i>
+                    <span>Accueil</span>
+                </button>
+            </nav>
+
             <div class="user-progress">
                 <div class="streak">
                     <i class="fas fa-fire"></i>
@@ -120,6 +132,12 @@
                             <h5>📝 Nota gramatical</h5>
                             <p id="grammar-note-text"></p>
                         </div>
+                        <div class="popup-actions">
+                            <button id="save-word-btn" class="save-word-btn">
+                                <i class="fas fa-bookmark"></i>
+                                <span>Sauvegarder ce mot</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -186,6 +204,63 @@
                     <p>Puntuación: <span id="score"></span>/3</p>
                     <p>¡Ganaste <span id="points-earned">50</span> puntos! 🎉</p>
                     <button id="restart-quiz" class="restart-btn">Repetir quiz</button>
+                </div>
+            </section>
+
+            <!-- Saved Words Section -->
+            <section class="saved-words-section" id="saved-words-section" style="display: none;">
+                <div class="saved-words-header">
+                    <h3>📖 Mes mots sauvegardés</h3>
+                    <div class="saved-words-controls">
+                        <button id="clear-all-words" class="clear-btn">
+                            <i class="fas fa-trash"></i>
+                            Effacer tout
+                        </button>
+                        <button id="export-words" class="export-btn">
+                            <i class="fas fa-download"></i>
+                            Exporter
+                        </button>
+                    </div>
+                </div>
+
+                <div class="language-tabs">
+                    <button class="tab-btn active" data-lang="all">
+                        <span>Tous</span>
+                        <span class="tab-count" id="count-all">0</span>
+                    </button>
+                    <button class="tab-btn" data-lang="es">
+                        <span class="flag">🇪🇸</span>
+                        <span>Español</span>
+                        <span class="tab-count" id="count-es">0</span>
+                    </button>
+                    <button class="tab-btn" data-lang="it">
+                        <span class="flag">🇮🇹</span>
+                        <span>Italiano</span>
+                        <span class="tab-count" id="count-it">0</span>
+                    </button>
+                    <button class="tab-btn" data-lang="pt">
+                        <span class="flag">🇵🇹</span>
+                        <span>Português</span>
+                        <span class="tab-count" id="count-pt">0</span>
+                    </button>
+                    <button class="tab-btn" data-lang="ca">
+                        <span class="flag">🏴󠁥󠁳󠁣󠁴󠁿</span>
+                        <span>Català</span>
+                        <span class="tab-count" id="count-ca">0</span>
+                    </button>
+                    <button class="tab-btn" data-lang="fr">
+                        <span class="flag">🇫🇷</span>
+                        <span>Français</span>
+                        <span class="tab-count" id="count-fr">0</span>
+                    </button>
+                </div>
+
+                <div class="saved-words-content" id="saved-words-content">
+                    <div class="empty-state" id="empty-state">
+                        <i class="fas fa-bookmark-o"></i>
+                        <h4>Aucun mot sauvegardé</h4>
+                        <p>Cliquez sur les mots surlignés dans les articles pour les sauvegarder et créer votre dictionnaire personnel.</p>
+                    </div>
                 </div>
             </section>
         </div>
