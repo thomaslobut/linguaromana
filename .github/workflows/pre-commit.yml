@@ -1,0 +1,51 @@
+name: 🔍 Pre-commit Checks
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  pre-commit-tests:
+    runs-on: ubuntu-latest
+    name: 🧪 Pre-commit Validation
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🐍 Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: 📦 Install dependencies
+      run: |
+        cd backend
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: 🔧 Quick Django Setup
+      run: |
+        cd backend
+        python manage.py makemigrations --check --dry-run || python manage.py makemigrations
+        python manage.py migrate
+        
+    - name: ⚡ Quick Streak Tests
+      run: |
+        cd backend
+        python manage.py test authentication.test_streak.StreakSystemTestCase.test_user_with_one_flame_gets_two_flames_next_day -v 1
+        python manage.py test authentication.test_streak.StreakSystemTestCase.test_user_with_one_flame_no_two_flames_same_day -v 1
+        
+    - name: 🔍 Code Syntax Check
+      run: |
+        cd backend
+        python -m py_compile authentication/utils.py
+        python -m py_compile authentication/test_streak.py
+        python -m py_compile authentication/views.py
+        
+    - name: ✅ Pre-commit Summary
+      run: |
+        echo "🎉 Pre-commit checks passed!"
+        echo "✅ Core streak tests: OK"
+        echo "✅ Code syntax: OK"
+        echo "🚀 Ready for review"

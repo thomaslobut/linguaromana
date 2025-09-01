@@ -70,6 +70,48 @@ apprentissage-langues/
 - **Animations de récompense** lors du gain de points
 - **Interface inspirée de Duolingo**
 
+## 🧪 Tests et Déploiement
+
+### 🔥 Tests du Système de Flammes
+
+Le projet inclut un système complet de tests pour garantir que le système de flammes fonctionne correctement :
+
+```bash
+# Tests de streak seulement
+cd backend
+python run_streak_tests.py
+
+# Tous les tests Django
+python manage.py test authentication
+
+# Tests complets avec vérifications
+python run_all_tests.py
+```
+
+### 🚀 Pipeline de Déploiement Automatique
+
+Le projet utilise GitHub Actions pour :
+- ✅ **Tests automatiques** du système de flammes à chaque push
+- ✅ **Validation** du code frontend et backend  
+- ✅ **Déploiement automatique** sur GitHub Pages si tous les tests passent
+- ✅ **Notifications** du statut de déploiement
+
+### 📊 Status des Tests
+
+![Tests](https://github.com/thomaslobut/linguaromana/workflows/🚀%20LinguaRomana%20CI/CD%20Pipeline/badge.svg)
+
+### 🛠️ Développement Local
+
+Avant de pousser votre code, utilisez le script de validation :
+
+```bash
+# Script complet de validation
+./scripts/test-before-deploy.sh
+
+# Ou manuellement :
+cd backend && python run_streak_tests.py
+```
+
 ## 🔧 Personnalisation
 
 ### Ajouter de nouveaux mots-clés
@@ -102,15 +144,72 @@ const quizData = [
 ];
 ```
 
+## 🔐 Nouvelle fonctionnalité : Authentification Django
+
+Le projet intègre maintenant un système d'authentification complet avec Django !
+
+### 🚀 Lancement de l'application
+
+#### Option 1: Version avec authentification (Django Backend)
+```bash
+# Aller dans le dossier backend
+cd backend
+
+# Activer l'environnement virtuel
+source venv/bin/activate
+
+# Lancer le serveur Django
+python manage.py runserver
+```
+Puis accéder à : http://127.0.0.1:8000/
+
+#### Option 2: Version originale (Frontend uniquement)
+Ouvrir directement `index.html` dans le navigateur.
+
+### ✨ Nouvelles fonctionnalités
+
+- 🔐 **Inscription et connexion** sécurisées
+- 📊 **Sauvegarde des résultats** de quiz en base de données
+- 🏆 **Système de points et streaks** persistants
+- 👤 **Profils utilisateur** avec langues préférées
+- 🎯 **Suivi de progression** détaillé
+- 🛡️ **Interface d'administration** Django
+- 🆓 **Accès libre aux articles** sans compte obligatoire
+- 🎮 **Système de badges** et récompenses
+- 💡 **Messages motivationnels** pour encourager l'inscription
+- 📈 **Interface adaptative** selon le statut de connexion
+
+### 👥 Comptes de démonstration
+
+- **Utilisateur**: `demo` / **Mot de passe**: `demo123`
+- **Utilisateur**: `testuser` / **Mot de passe**: `test123`
+- **Admin**: `admin` / **Mot de passe**: `admin123` (Interface d'administration : http://127.0.0.1:8000/admin/)
+
+### 📁 Structure du projet
+
+```
+apprentissage-langues/
+├── backend/                 # Backend Django avec authentification
+│   ├── authentication/     # App d'authentification
+│   ├── templates/          # Templates HTML
+│   └── requirements.txt    # Dépendances Python
+├── static/                 # Fichiers CSS/JS partagés
+├── index.html             # Version frontend simple
+├── script.js              # Version originale
+└── README.md              # Cette documentation
+```
+
 ## 🚀 Améliorations futures
 
-- **Base de données** pour stocker le progrès utilisateur
+- ✅ **Système d'authentification** *(Terminé !)*
+- ✅ **Base de données** pour stocker le progrès utilisateur *(Terminé !)*
 - **Nouveaux articles** automatiquement mis à jour
-- **Système d'authentification** 
 - **Leaderboards** et compétitions
 - **Audio** pour la prononciation
 - **Exercices d'écriture** et de grammaire
 - **API d'actualités** pour le contenu dynamique
+- **Notifications push** pour les streaks
+- **Mode hors ligne** avec service workers
 
 ## 📱 Compatibilité
 

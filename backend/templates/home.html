@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinguaRomana - Aprende con las noticias</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <i class="fas fa-globe"></i>
+                <h1>LinguaRomana</h1>
+            </div>
+            
+            <nav class="nav-languages">
+                <button class="lang-btn active" data-lang="es">
+                    <span class="flag">🇪🇸</span>
+                    Español
+                </button>
+                <button class="lang-btn" data-lang="it">
+                    <span class="flag">🇮🇹</span>
+                    Italiano
+                </button>
+                <button class="lang-btn" data-lang="pt">
+                    <span class="flag">🇵🇹</span>
+                    Português
+                </button>
+                <button class="lang-btn" data-lang="ca">
+                    <span class="flag">🏴󠁥󠁳󠁣󠁴󠁿</span>
+                    Català
+                </button>
+            </nav>
+
+            <div class="user-progress">
+                {% if is_authenticated %}
+                    <div class="user-info">
+                        <span class="username">{{ user.username }}</span>
+                        <a href="{% url 'logout' %}" class="logout-btn">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </a>
+                    </div>
+                    <div class="streak">
+                        <i class="fas fa-fire"></i>
+                        <span id="streak-count">{{ profile.current_streak }}</span>
+                    </div>
+                    <div class="points">
+                        <i class="fas fa-star"></i>
+                        <span id="points-count">{{ profile.total_points }}</span>
+                    </div>
+                {% else %}
+                    <div class="guest-actions">
+                        <a href="{% url 'login' %}" class="auth-btn login-btn">
+                            <i class="fas fa-sign-in-alt"></i>
+                            Connexion
+                        </a>
+                        <a href="{% url 'register' %}" class="auth-btn register-btn">
+                            <i class="fas fa-user-plus"></i>
+                            S'inscrire
+                        </a>
+                    </div>
+                    <div class="guest-info">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Créez un compte pour sauvegarder vos points !</span>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="container">
+            <!-- Daily Article -->
+            <section class="article-section">
+                <div class="article-header">
+                    <h2>📰 Artículo del día</h2>
+                    <p class="article-meta">12 de agosto, 2025 • Nivel: Intermedio</p>
+                </div>
+
+                <article class="news-article">
+                    <h3>Crisis humanitaria en Gaza: Los lanzamientos aéreos de ayuda generan controversia</h3>
+                    
+                    <div class="article-content">
+                        <p>
+                            Los países árabes están realizando lanzamientos aéreos de ayuda humanitaria sobre Gaza. 
+                            Sin embargo, estas operaciones han generado <span class="keyword" data-word="controversia">controversia</span> 
+                            porque muchos expertos y organizaciones consideran que no son efectivas.
+                        </p>
+                        
+                        <p>
+                            Según testigos locales, estos lanzamientos pueden ser peligrosos. Un activista palestino 
+                            declaró que estas operaciones "no son ayuda real, solo son fotos que 
+                            <span class="keyword" data-word="engañan">engañan</span>". 
+                        </p>
+                        
+                        <p>
+                            La situación humanitaria en Gaza sigue siendo 
+                            <span class="keyword" data-word="devastadora">devastadora</span>, 
+                            con escasez de alimentos y medicinas. Los habitantes de la región necesitan 
+                            una solución más efectiva y segura para recibir ayuda.
+                        </p>
+                        
+                        <p>
+                            Las autoridades internacionales están estudiando alternativas más seguras 
+                            para hacer llegar la ayuda humanitaria a la población civil de Gaza.
+                        </p>
+                    </div>
+                </article>
+
+                <!-- Translation Popup -->
+                <div id="translation-popup" class="translation-popup">
+                    <div class="popup-content">
+                        <button class="close-btn">&times;</button>
+                        <h4 id="popup-word"></h4>
+                        <div class="translations">
+                            <div class="translation-item">
+                                <span class="language">Español:</span>
+                                <span id="trans-es"></span>
+                            </div>
+                            <div class="translation-item">
+                                <span class="language">Italiano:</span>
+                                <span id="trans-it"></span>
+                            </div>
+                            <div class="translation-item">
+                                <span class="language">Português:</span>
+                                <span id="trans-pt"></span>
+                            </div>
+                            <div class="translation-item">
+                                <span class="language">Català:</span>
+                                <span id="trans-ca"></span>
+                            </div>
+                            <div class="translation-item">
+                                <span class="language">Français:</span>
+                                <span id="trans-fr"></span>
+                            </div>
+                        </div>
+                        <div class="grammar-note">
+                            <h5>📝 Nota gramatical</h5>
+                            <p id="grammar-note-text"></p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Grammar Notes -->
+            <section class="grammar-section">
+                <h3>📚 Notas gramaticales</h3>
+                <div class="grammar-cards">
+                    <div class="grammar-card">
+                        <h4>Presente de subjuntivo</h4>
+                        <p>Usado para expresar duda, deseo o emoción: "Es importante que <strong>sepas</strong> la verdad"</p>
+                    </div>
+                    <div class="grammar-card">
+                        <h4>Ser vs Estar</h4>
+                        <p>"Es peligroso" (característica) vs "Está peligroso" (estado temporal)</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Quiz Section -->
+            <section class="quiz-section">
+                <h3>🎯 Quiz de comprensión</h3>
+                <div class="quiz-container">
+                    <div class="question active" id="question-1">
+                        <h4>1. ¿Qué opinan los expertos sobre los lanzamientos aéreos?</h4>
+                        <div class="options">
+                            <button class="option" data-correct="false">Son muy efectivos</button>
+                            <button class="option" data-correct="true">No son efectivos</button>
+                            <button class="option" data-correct="false">Son la mejor solución</button>
+                            <button class="option" data-correct="false">Son baratos</button>
+                        </div>
+                    </div>
+
+                    <div class="question" id="question-2">
+                        <h4>2. Según el activista palestino, ¿qué son realmente estos lanzamientos?</h4>
+                        <div class="options">
+                            <button class="option" data-correct="false">Ayuda real</button>
+                            <button class="option" data-correct="true">Fotos que engañan</button>
+                            <button class="option" data-correct="false">Una solución perfecta</button>
+                            <button class="option" data-correct="false">Un programa exitoso</button>
+                        </div>
+                    </div>
+
+                    <div class="question" id="question-3">
+                        <h4>3. ¿Cómo se describe la situación humanitaria en Gaza?</h4>
+                        <div class="options">
+                            <button class="option" data-correct="false">Está mejorando</button>
+                            <button class="option" data-correct="false">Es normal</button>
+                            <button class="option" data-correct="true">Es devastadora</button>
+                            <button class="option" data-correct="false">Es excelente</button>
+                        </div>
+                    </div>
+
+                    <div class="quiz-navigation">
+                        <button id="prev-btn" class="nav-btn" disabled>Anterior</button>
+                        <span class="question-counter">1 / 3</span>
+                        <button id="next-btn" class="nav-btn">Siguiente</button>
+                        <button id="submit-btn" class="submit-btn" style="display: none;">Finalizar</button>
+                    </div>
+                </div>
+
+                <div class="quiz-results" id="quiz-results" style="display: none;">
+                    <h4>¡Quiz completado!</h4>
+                    <p>Puntuación: <span id="score"></span>/3</p>
+                    <p>¡Ganaste <span id="points-earned">50</span> puntos! 🎉</p>
+                    <button id="restart-quiz" class="restart-btn">Repetir quiz</button>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 LinguaRomana. Aprende idiomas con las noticias del mundo.</p>
+        </div>
+    </footer>
+
+    <!-- Hidden user data for JS -->
+    <script>
+        window.USER_DATA = {
+            isAuthenticated: {{ is_authenticated|yesno:"true,false" }},
+            {% if is_authenticated %}
+            userId: {{ user.id }},
+            username: "{{ user.username }}",
+            profile: {
+                currentStreak: {{ profile.current_streak }},
+                totalPoints: {{ profile.total_points }},
+                level: {{ profile.level }},
+                preferredLanguage: "{{ profile.preferred_language }}"
+            }
+            {% else %}
+            userId: null,
+            username: null,
+            profile: {
+                currentStreak: 0,
+                totalPoints: 0,
+                level: 1,
+                preferredLanguage: "es"
+            }
+            {% endif %}
+        };
+    </script>
+    <script src="/static/script.js"></script>
+</body>
+</html>
