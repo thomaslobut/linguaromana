@@ -163,7 +163,7 @@ class UserBadge(models.Model):
 
 class Word(models.Model):
     """Vocabulary words with translations across Romance languages"""
-    
+
     word = models.CharField(max_length=100, unique=True)
     primary_language = models.CharField(
         max_length=5,
@@ -179,24 +179,26 @@ class Word(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(
-        User, 
-        on_delete=models.SET_NULL, 
-        null=True, 
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
         blank=True,
-        help_text="Admin user who created this word"
+        help_text="Admin user who created this word",
     )
-    
+
     def __str__(self):
         return f"{self.word} ({self.primary_language})"
-    
+
     class Meta:
         ordering = ["word"]
 
 
 class WordTranslation(models.Model):
     """Translations of words in different Romance languages"""
-    
-    word = models.ForeignKey(Word, on_delete=models.CASCADE, related_name="translations")
+
+    word = models.ForeignKey(
+        Word, on_delete=models.CASCADE, related_name="translations"
+    )
     language = models.CharField(
         max_length=5,
         choices=[
@@ -222,24 +224,23 @@ class WordTranslation(models.Model):
         ],
         blank=True,
     )
-    
+
     def __str__(self):
         return f"{self.word.word} → {self.translation} ({self.language})"
-    
+
     class Meta:
         unique_together = ["word", "language"]
 
 
 class WordDefinition(models.Model):
     """Grammar notes and contextual explanations for words"""
-    
-    word = models.OneToOneField(Word, on_delete=models.CASCADE, related_name="definition")
-    grammar_note = models.TextField(
-        help_text="Detailed grammatical explanation"
+
+    word = models.OneToOneField(
+        Word, on_delete=models.CASCADE, related_name="definition"
     )
+    grammar_note = models.TextField(help_text="Detailed grammatical explanation")
     usage_example = models.TextField(
-        blank=True,
-        help_text="Example sentence using the word"
+        blank=True, help_text="Example sentence using the word"
     )
     difficulty_level = models.CharField(
         max_length=20,
@@ -250,36 +251,35 @@ class WordDefinition(models.Model):
         ],
         default="intermediate",
     )
-    etymology = models.TextField(
-        blank=True,
-        help_text="Word origin and etymology"
-    )
-    
+    etymology = models.TextField(blank=True, help_text="Word origin and etymology")
+
     def __str__(self):
         return f"Definition: {self.word.word}"
 
 
 class ArticleWord(models.Model):
     """Many-to-many relationship between Articles and Words with additional context"""
-    
-    article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name="article_words")
-    word = models.ForeignKey(Word, on_delete=models.CASCADE, related_name="word_articles")
+
+    article = models.ForeignKey(
+        Article, on_delete=models.CASCADE, related_name="article_words"
+    )
+    word = models.ForeignKey(
+        Word, on_delete=models.CASCADE, related_name="word_articles"
+    )
     position_in_text = models.PositiveIntegerField(
         help_text="Character position where word appears in article"
     )
     context_sentence = models.TextField(
-        blank=True,
-        help_text="The sentence where this word appears"
+        blank=True, help_text="The sentence where this word appears"
     )
     is_key_vocabulary = models.BooleanField(
-        default=True,
-        help_text="Whether this word is highlighted as key vocabulary"
+        default=True, help_text="Whether this word is highlighted as key vocabulary"
     )
     added_at = models.DateTimeField(auto_now_add=True)
-    
+
     def __str__(self):
         return f"{self.article.title} → {self.word.word}"
-    
+
     class Meta:
         unique_together = ["article", "word", "position_in_text"]
         ordering = ["position_in_text"]
@@ -287,15 +287,15 @@ class ArticleWord(models.Model):
 
 class UserSavedWord(models.Model):
     """Words saved by users to their personal dictionary"""
-    
+
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     word = models.ForeignKey(Word, on_delete=models.CASCADE)
     saved_from_article = models.ForeignKey(
-        Article, 
-        on_delete=models.SET_NULL, 
-        null=True, 
+        Article,
+        on_delete=models.SET_NULL,
+        null=True,
         blank=True,
-        help_text="Article where user discovered this word"
+        help_text="Article where user discovered this word",
     )
     saved_at = models.DateTimeField(auto_now_add=True)
     review_count = models.PositiveIntegerField(default=0)
@@ -310,10 +310,10 @@ class UserSavedWord(models.Model):
         ],
         default="new",
     )
-    
+
     def __str__(self):
         return f"{self.user.username} saved {self.word.word}"
-    
+
     class Meta:
         unique_together = ["user", "word"]
         ordering = ["-saved_at"]
