@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Auto-Sync LinguaRomana</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #e7f3ff; border-color: #b8daff; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        .keyword { color: #007bff; cursor: pointer; text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test du Système Auto-Sync LinguaRomana</h1>
+    
+    <div id="test-results"></div>
+    
+    <div class="test-section info">
+        <h3>📋 Tests à effectuer :</h3>
+        <ol>
+            <li>Vérification du chargement du script auto-sync</li>
+            <li>Synchronisation des articles depuis Django</li>
+            <li>Synchronisation des définitions de mots</li>
+            <li>Chargement automatique du dernier article</li>
+            <li>Fonctionnement des mots-clés cliquables</li>
+        </ol>
+    </div>
+    
+    <div class="test-section" id="article-display">
+        <h3>📰 Article Chargé Automatiquement :</h3>
+        <div id="article-content">
+            <div id="article-title">Chargement en cours...</div>
+            <div id="article-meta">--</div>
+            <div id="article-body">🔄 Chargement du dernier article depuis Django...</div>
+        </div>
+    </div>
+    
+    <div class="test-section" id="localStorage-data">
+        <h3>💾 Données localStorage :</h3>
+        <pre id="localStorage-content">Chargement...</pre>
+    </div>
+    
+    <script src="auto-sync.js"></script>
+    <script>
+        // Test script
+        function runTests() {
+            const results = document.getElementById('test-results');
+            
+            setTimeout(() => {
+                let testResults = [];
+                
+                // Test 1: Vérifier localStorage articles
+                const articles = JSON.parse(localStorage.getItem('linguaromana_custom_articles') || '[]');
+                testResults.push({
+                    name: "Articles dans localStorage",
+                    success: articles.length > 0,
+                    details: `${articles.length} article(s) trouvé(s)`
+                });
+                
+                // Test 2: Vérifier localStorage mots
+                const words = JSON.parse(localStorage.getItem('linguaromana_custom_words') || '{}');
+                testResults.push({
+                    name: "Définitions dans localStorage", 
+                    success: Object.keys(words).length > 0,
+                    details: `${Object.keys(words).length} définition(s) trouvée(s)`
+                });
+                
+                // Test 3: Vérifier le dernier article
+                if (articles.length > 0) {
+                    const latest = articles.sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+                    document.getElementById('article-title').textContent = latest.title;
+                    document.getElementById('article-meta').textContent = 
+                        `${latest.date} • ${latest.language} • ${latest.level}`;
+                    
+                    // Traiter le contenu avec mots-clés
+                    let content = latest.content;
+                    if (latest.keywords) {
+                        latest.keywords.forEach(keyword => {
+                            const regex = new RegExp(`\\[${keyword}\\]`, 'g');
+                            content = content.replace(regex, 
+                                `<span class="keyword" onclick="showWordInfo('${keyword}')">${keyword}</span>`);
+                        });
+                    }
+                    
+                    document.getElementById('article-body').innerHTML = 
+                        content.split('\n\n').map(p => `<p>${p}</p>`).join('');
+                    
+                    testResults.push({
+                        name: "Chargement article automatique",
+                        success: true,
+                        details: `Article "${latest.title}" chargé`
+                    });
+                }
+                
+                // Afficher les résultats
+                results.innerHTML = testResults.map(test => `
+                    <div class="test-section ${test.success ? 'success' : 'error'}">
+                        <h4>${test.success ? '✅' : '❌'} ${test.name}</h4>
+                        <p>${test.details}</p>
+                    </div>
+                `).join('');
+                
+                // Afficher les données localStorage
+                document.getElementById('localStorage-content').textContent = 
+                    JSON.stringify({
+                        articles: articles.length,
+                        words: Object.keys(words).length,
+                        sample_article: articles[0] ? {
+                            title: articles[0].title,
+                            language: articles[0].language,
+                            keywords: articles[0].keywords
+                        } : null,
+                        sample_words: Object.keys(words).slice(0, 3)
+                    }, null, 2);
+                
+            }, 2000); // Attendre 2 secondes pour la synchronisation
+        }
+        
+        function showWordInfo(word) {
+            const words = JSON.parse(localStorage.getItem('linguaromana_custom_words') || '{}');
+            const wordData = words[word];
+            
+            if (wordData) {
+                alert(`
+Mot: ${word}
+Langue: ${wordData.primary_language}
+Niveau: ${wordData.difficulty_level}
+
+Traductions:
+🇪🇸 Español: ${wordData.es}
+🇮🇹 Italiano: ${wordData.it}
+🇵🇹 Português: ${wordData.pt}
+🏴󠁥󠁳󠁣󠁴󠁿 Català: ${wordData.ca}
+🇫🇷 Français: ${wordData.fr}
+
+Grammaire: ${wordData.grammar}
+                `);
+            } else {
+                alert(`Aucune définition trouvée pour "${word}"`);
+            }
+        }
+        
+        // Lancer les tests au chargement de la page
+        document.addEventListener('DOMContentLoaded', runTests);
+    </script>
+</body>
+</html>

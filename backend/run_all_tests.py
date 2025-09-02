@@ -90,6 +90,35 @@ def run_all_django_tests():
         return True
 
 
+def run_ui_functionality_tests():
+    """Run specific UI functionality tests"""
+    print("\n🎯 Running UI Functionality Tests...")
+    print("=" * 60)
+
+    TestRunner = get_runner(settings)
+    test_runner = TestRunner(verbosity=1 if os.getenv("CI") else 2)
+
+    # Run specific test classes for UI functionality
+    ui_test_labels = [
+        "authentication.test_articles_vocabulary.WordManagementTestCase",
+        "authentication.test_articles_vocabulary.ArchiveReadingTestCase",
+        "authentication.test_articles_vocabulary.IntegrationUITestCase",
+        "authentication.test_articles_vocabulary.AdminArticleSaveTestCase",
+    ]
+
+    ui_failures = test_runner.run_tests(ui_test_labels)
+
+    if ui_failures:
+        print(f"\n❌ {ui_failures} UI functionality test(s) failed!")
+        return False
+    else:
+        print("\n✅ All UI functionality tests passed!")
+        print("✅ Word definition management verified")
+        print("✅ Archive article reading verified")
+        print("✅ Frontend-backend integration verified")
+        return True
+
+
 def run_code_quality_checks():
     """Run basic code quality checks"""
     print("\n🔍 Running Code Quality Checks...")
@@ -169,6 +198,7 @@ def main():
     # Run tests in order
     results["Streak System Tests"] = run_streak_tests()
     results["All Django Tests"] = run_all_django_tests()
+    results["UI Functionality Tests"] = run_ui_functionality_tests()
     results["Code Quality Checks"] = run_code_quality_checks()
 
     # Print summary and determine exit code

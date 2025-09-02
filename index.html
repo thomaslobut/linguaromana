@@ -37,6 +37,10 @@
             </nav>
 
             <nav class="nav-actions">
+                <button class="action-btn" id="archive-btn">
+                    <i class="fas fa-archive"></i>
+                    <span>Archive</span>
+                </button>
                 <button class="action-btn" id="saved-words-btn">
                     <i class="fas fa-bookmark"></i>
                     <span>Mots sauvegardés</span>
@@ -71,36 +75,16 @@
             <!-- Daily Article -->
             <section class="article-section">
                 <div class="article-header">
-                    <h2>📰 Artículo del día</h2>
-                    <p class="article-meta">12 de agosto, 2025 • Nivel: Intermedio</p>
+                    <h2 id="article-main-title">📰 Artículo del día</h2>
+                    <p class="article-meta" id="article-meta">Chargement...</p>
                 </div>
 
                 <article class="news-article">
-                    <h3>Crisis humanitaria en Gaza: Los lanzamientos aéreos de ayuda generan controversia</h3>
+                    <h3 id="article-title">Chargement de l'article...</h3>
                     
                     <div class="article-content">
-                        <p>
-                            Los países árabes están realizando lanzamientos aéreos de ayuda humanitaria sobre Gaza. 
-                            Sin embargo, estas operaciones han generado <span class="keyword" data-word="controversia">controversia</span> 
-                            porque muchos expertos y organizaciones consideran que no son efectivas.
-                        </p>
-                        
-                        <p>
-                            Según testigos locales, estos lanzamientos pueden ser peligrosos. Un activista palestino 
-                            declaró que estas operaciones "no son ayuda real, solo son fotos que 
-                            <span class="keyword" data-word="engañan">engañan</span>". 
-                        </p>
-                        
-                        <p>
-                            La situación humanitaria en Gaza sigue siendo 
-                            <span class="keyword" data-word="devastadora">devastadora</span>, 
-                            con escasez de alimentos y medicinas. Los habitantes de la región necesitan 
-                            una solución más efectiva y segura para recibir ayuda.
-                        </p>
-                        
-                        <p>
-                            Las autoridades internacionales están estudiando alternativas más seguras 
-                            para hacer llegar la ayuda humanitaria a la población civil de Gaza.
+                        <p id="article-content">
+                            <i class="fas fa-spinner fa-spin"></i> Chargement du dernier article publié...
                         </p>
                     </div>
                 </article>
@@ -351,6 +335,28 @@
                                     </div>
                                 </div>
 
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="article-language">Langue de l'article</label>
+                                        <select id="article-language" required>
+                                            <option value="" disabled style="display: none;">-- Sélectionner une langue --</option>
+                                            <option value="es" selected>🇪🇸 Español</option>
+                                            <option value="it">🇮🇹 Italiano</option>
+                                            <option value="pt">🇵🇹 Português</option>
+                                            <option value="ca">🏴󠁥󠁳󠁣󠁴󠁿 Català</option>
+                                            <option value="fr">🇫🇷 Français</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="article-level">Niveau de difficulté</label>
+                                        <select id="article-level">
+                                            <option value="beginner">Débutant</option>
+                                            <option value="intermediate" selected>Intermédiaire</option>
+                                            <option value="advanced">Avancé</option>
+                                        </select>
+                                    </div>
+                                </div>
+
                                 <div class="form-group">
                                     <label for="article-content">Contenu de l'article</label>
                                     <textarea id="article-content" rows="8" placeholder="Écrivez le contenu de l'article ici. Utilisez [mot-clé] pour marquer les mots qui auront des traductions."></textarea>
@@ -418,40 +424,95 @@
                             </div>
 
                             <div class="word-form">
-                                <div class="form-group">
-                                    <label for="word-key">Mot-clé</label>
-                                    <input type="text" id="word-key" placeholder="Ex: engañan">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="word-key">Mot-clé</label>
+                                        <input type="text" id="word-key" placeholder="Ex: engañan">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="word-primary-lang">Langue principale</label>
+                                        <select id="word-primary-lang">
+                                            <option value="es">🇪🇸 Español</option>
+                                            <option value="it">🇮🇹 Italiano</option>
+                                            <option value="pt">🇵🇹 Português</option>
+                                            <option value="ca">🏴󠁥󠁳󠁣󠁴󠁿 Català</option>
+                                            <option value="fr">🇫🇷 Français</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="word-part-of-speech">Type de mot</label>
+                                        <select id="word-part-of-speech">
+                                            <option value="">-- Sélectionner --</option>
+                                            <option value="noun">Nom</option>
+                                            <option value="verb">Verbe</option>
+                                            <option value="adjective">Adjectif</option>
+                                            <option value="adverb">Adverbe</option>
+                                            <option value="preposition">Préposition</option>
+                                            <option value="article">Article</option>
+                                            <option value="other">Autre</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="word-difficulty">Niveau de difficulté</label>
+                                        <select id="word-difficulty">
+                                            <option value="beginner">Débutant</option>
+                                            <option value="intermediate" selected>Intermédiaire</option>
+                                            <option value="advanced">Avancé</option>
+                                        </select>
+                                    </div>
                                 </div>
 
                                 <div class="translations-editor">
-                                    <h6>🌍 Traductions</h6>
+                                    <h6>🌍 Traductions dans toutes les langues</h6>
                                     <div class="translation-inputs">
                                         <div class="translation-input">
                                             <label>🇪🇸 Español</label>
-                                            <input type="text" id="trans-input-es" placeholder="Ex: engañan (verbo: engañar - deceive)">
+                                            <input type="text" id="trans-input-es" placeholder="Ex: engañan">
+                                            <input type="text" id="pronunciation-es" placeholder="Prononciation (optionnel)" class="pronunciation-input">
                                         </div>
                                         <div class="translation-input">
                                             <label>🇮🇹 Italiano</label>
-                                            <input type="text" id="trans-input-it" placeholder="Ex: ingannano (verbo: ingannare)">
+                                            <input type="text" id="trans-input-it" placeholder="Ex: ingannano">
+                                            <input type="text" id="pronunciation-it" placeholder="Prononciation (optionnel)" class="pronunciation-input">
                                         </div>
                                         <div class="translation-input">
                                             <label>🇵🇹 Português</label>
-                                            <input type="text" id="trans-input-pt" placeholder="Ex: enganam (verbo: enganar)">
+                                            <input type="text" id="trans-input-pt" placeholder="Ex: enganam">
+                                            <input type="text" id="pronunciation-pt" placeholder="Prononciation (optionnel)" class="pronunciation-input">
                                         </div>
                                         <div class="translation-input">
                                             <label>🏴󠁥󠁳󠁣󠁴󠁿 Català</label>
-                                            <input type="text" id="trans-input-ca" placeholder="Ex: enganyen (verb: enganyar)">
+                                            <input type="text" id="trans-input-ca" placeholder="Ex: enganyen">
+                                            <input type="text" id="pronunciation-ca" placeholder="Prononciation (optionnel)" class="pronunciation-input">
                                         </div>
                                         <div class="translation-input">
                                             <label>🇫🇷 Français</label>
-                                            <input type="text" id="trans-input-fr" placeholder="Ex: trompent (verbe: tromper)">
+                                            <input type="text" id="trans-input-fr" placeholder="Ex: trompent">
+                                            <input type="text" id="pronunciation-fr" placeholder="Prononciation (optionnel)" class="pronunciation-input">
                                         </div>
                                     </div>
                                 </div>
 
-                                <div class="form-group">
-                                    <label for="word-grammar">Note grammaticale</label>
-                                    <textarea id="word-grammar" rows="3" placeholder="Ex: Tercera persona del plural del presente de indicativo del verbo 'engañar'. Expresa una acción habitual o universal."></textarea>
+                                <div class="definition-section">
+                                    <h6>📚 Définition et contexte</h6>
+                                    
+                                    <div class="form-group">
+                                        <label for="word-grammar">Note grammaticale</label>
+                                        <textarea id="word-grammar" rows="3" placeholder="Ex: Tercera persona del plural del presente de indicativo del verbo 'engañar'. Expresa una acción habitual o universal."></textarea>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="word-usage-example">Exemple d'usage</label>
+                                        <textarea id="word-usage-example" rows="2" placeholder="Ex: Los estafadores siempre engañan a las personas vulnerables."></textarea>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="word-etymology">Étymologie (optionnel)</label>
+                                        <textarea id="word-etymology" rows="2" placeholder="Ex: Du latin 'ingannare', composé de 'in-' et 'gannire' (aboyer)."></textarea>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -525,6 +586,106 @@
                     </div>
                 </div>
             </section>
+
+            <!-- Archive Section -->
+            <section class="archive-section" id="archive-section" style="display: none;">
+                <div class="archive-header">
+                    <h3>📚 Archive des Articles</h3>
+                    <div class="archive-controls">
+                        <select id="archive-level-filter">
+                            <option value="all">Tous les niveaux</option>
+                            <option value="beginner">🟢 Débutant</option>
+                            <option value="intermediate">🟡 Intermédiaire</option>
+                            <option value="advanced">🔴 Avancé</option>
+                        </select>
+                        <select id="archive-language-filter">
+                            <option value="all">Toutes les langues</option>
+                            <option value="es">🇪🇸 Español</option>
+                            <option value="it">🇮🇹 Italiano</option>
+                            <option value="pt">🇵🇹 Português</option>
+                            <option value="ca">🏴󠁥󠁳󠁣󠁴󠁿 Català</option>
+                            <option value="fr">🇫🇷 Français</option>
+                        </select>
+                        <select id="archive-sort">
+                            <option value="newest">Plus récents</option>
+                            <option value="oldest">Plus anciens</option>
+                            <option value="title">Par titre</option>
+                        </select>
+                        <button id="archive-search-btn" class="search-btn">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="search-box" id="archive-search-box" style="display: none;">
+                    <input type="text" id="archive-search-input" placeholder="Rechercher dans les articles...">
+                    <button id="clear-search-btn" class="clear-btn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <div class="archive-stats">
+                    <div class="stat-item">
+                        <span class="stat-number" id="total-articles">0</span>
+                        <span class="stat-label">Articles total</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="beginner-articles">0</span>
+                        <span class="stat-label">🟢 Débutant</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="intermediate-articles">0</span>
+                        <span class="stat-label">🟡 Intermédiaire</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="advanced-articles">0</span>
+                        <span class="stat-label">🔴 Avancé</span>
+                    </div>
+                </div>
+
+                <div class="language-stats">
+                    <h4>📊 Répartition par langue</h4>
+                    <div class="language-stats-grid">
+                        <div class="language-stat-item">
+                            <span class="flag">🇪🇸</span>
+                            <span class="language-name">Español</span>
+                            <span class="language-count" id="count-lang-es">0</span>
+                        </div>
+                        <div class="language-stat-item">
+                            <span class="flag">🇮🇹</span>
+                            <span class="language-name">Italiano</span>
+                            <span class="language-count" id="count-lang-it">0</span>
+                        </div>
+                        <div class="language-stat-item">
+                            <span class="flag">🇵🇹</span>
+                            <span class="language-name">Português</span>
+                            <span class="language-count" id="count-lang-pt">0</span>
+                        </div>
+                        <div class="language-stat-item">
+                            <span class="flag">🏴󠁥󠁳󠁣󠁴󠁿</span>
+                            <span class="language-name">Català</span>
+                            <span class="language-count" id="count-lang-ca">0</span>
+                        </div>
+                        <div class="language-stat-item">
+                            <span class="flag">🇫🇷</span>
+                            <span class="language-name">Français</span>
+                            <span class="language-count" id="count-lang-fr">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="archive-content" id="archive-content">
+                    <div class="archive-grid" id="archive-grid">
+                        <!-- Articles will be rendered here -->
+                    </div>
+                </div>
+
+                <div class="empty-archive" id="empty-archive" style="display: none;">
+                    <i class="fas fa-archive"></i>
+                    <h4>Aucun article trouvé</h4>
+                    <p>Il n'y a pas d'articles correspondant à vos critères de recherche.</p>
+                </div>
+            </section>
         </div>
     </main>
 
@@ -535,6 +696,7 @@
         </div>
     </footer>
 
+    <script src="auto-sync.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

@@ -815,8 +815,32 @@ class AdminManager {
     saveCustomWords() {
         try {
             localStorage.setItem('linguaromana_custom_words', JSON.stringify(this.customWords));
-            // Update global translations object
-            Object.assign(translations, this.customWords);
+            // Update global translations object with backward compatibility
+            Object.keys(this.customWords).forEach(word => {
+                const wordData = this.customWords[word];
+                
+                // Support both old format (direct es, it, pt, ca, fr) and new format (translations)
+                if (wordData.translations) {
+                    // New format with translations object
+                    translations[word] = {
+                        ...wordData.translations,
+                        grammar: wordData.definition?.grammar_note || ''
+                    };
+                } else {
+                    // Old format with direct language properties
+                    translations[word] = {
+                        es: wordData.es || '',
+                        it: wordData.it || '',
+                        pt: wordData.pt || '',
+                        ca: wordData.ca || '',
+                        fr: wordData.fr || '',
+                        grammar: wordData.grammar || ''
+                    };
+                }
+            });
+            
+            console.log('💾 Mots personnalisés sauvegardés:', this.customWords);
+            console.log('🌍 Traductions globales mises à jour:', translations);
         } catch (error) {
             console.error('Error saving custom words:', error);
         }
@@ -994,27 +1018,78 @@ class AdminManager {
 
     // Article Management
     showArticleEditor(article = null) {
+        console.log('📝 showArticleEditor() - Ouverture de l\'éditeur d\'article');
+        
         this.currentEditingArticle = article;
         const editor = document.getElementById('article-editor');
         const title = document.getElementById('editor-title');
         
         if (article) {
+            console.log('✏️ Mode édition - Chargement de l\'article existant');
             title.textContent = '✏️ Modifier Article';
             document.getElementById('article-title').value = article.title;
             document.getElementById('article-date').value = article.date;
             document.getElementById('article-content').value = article.content;
             document.getElementById('article-summary').value = article.summary || '';
+            document.getElementById('article-language').value = article.language || 'es';
+            document.getElementById('article-level').value = article.level || 'intermediate';
         } else {
+            console.log('✍️ Mode création - Initialisation d\'un nouvel article');
             title.textContent = '✍️ Nouvel Article';
-            document.getElementById('article-title').value = '';
-            document.getElementById('article-date').value = new Date().toISOString().split('T')[0];
-            document.getElementById('article-content').value = '';
-            document.getElementById('article-summary').value = '';
+            
+            // Réinitialiser tous les champs explicitement
+            const titleField = document.getElementById('article-title');
+            const dateField = document.getElementById('article-date');
+            const contentField = document.getElementById('article-content');
+            const summaryField = document.getElementById('article-summary');
+            const languageField = document.getElementById('article-language');
+            const levelField = document.getElementById('article-level');
+            
+            // Vérifier que tous les éléments existent avant de les modifier
+            if (!titleField || !dateField || !contentField || !summaryField || !languageField || !levelField) {
+                console.error('❌ Éléments du formulaire manquants lors de l\'initialisation!');
+                return;
+            }
+            
+            titleField.value = '';
+            dateField.value = new Date().toISOString().split('T')[0];
+            contentField.value = '';
+            summaryField.value = '';
+            
+            // Forcer la sélection de langue et niveau avec une vérification
+            languageField.value = 'es';
+            levelField.value = 'intermediate';
+            
+            // Vérification que les valeurs ont bien été définies
+            setTimeout(() => {
+                console.log('🔍 Vérification des valeurs par défaut après initialisation:', {
+                    title: `"${titleField.value}"`,
+                    date: `"${dateField.value}"`,
+                    content: `"${contentField.value}"`,
+                    language: `"${languageField.value}"`,
+                    level: `"${levelField.value}"`
+                });
+                
+                // Si la langue n'est toujours pas définie, forcer la première option
+                if (!languageField.value) {
+                    languageField.selectedIndex = 0; // Sélectionner la première option (es)
+                    console.warn('⚠️ Langue forcée via selectedIndex');
+                }
+            }, 50);
         }
 
         editor.style.display = 'block';
         document.getElementById('articles-list').style.display = 'none';
-        this.detectKeywords();
+        
+        // Forcer la vérification de l'intégrité du formulaire après un délai
+        setTimeout(() => {
+            if (window.archiveManager && typeof archiveManager.ensureFormIntegrity === 'function') {
+                archiveManager.ensureFormIntegrity();
+            }
+            this.detectKeywords();
+        }, 100);
+        
+        console.log('✅ Éditeur d\'article ouvert');
     }
 
     hideArticleEditor() {
@@ -1061,15 +1136,108 @@ class AdminManager {
     }
 
     saveArticle() {
-        const title = document.getElementById('article-title').value.trim();
-        const date = document.getElementById('article-date').value;
-        const content = document.getElementById('article-content').value.trim();
-        const summary = document.getElementById('article-summary').value.trim();
-
-        if (!title || !content) {
-            alert('Le titre et le contenu sont obligatoires');
+        console.log('💾 saveArticle() - Début de la sauvegarde');
+        
+        // Vérifier d'abord que l'éditeur est ouvert et visible
+        const editor = document.getElementById('article-editor');
+        if (!editor || editor.style.display === 'none') {
+            console.error('❌ L\'éditeur d\'article n\'est pas ouvert!');
+            alert('Erreur: L\'éditeur d\'article n\'est pas accessible. Veuillez réessayer.');
             return;
         }
+        
+        // Forcer la vérification et réparation du formulaire avant validation
+        if (window.archiveManager && typeof archiveManager.ensureFormIntegrity === 'function') {
+            archiveManager.ensureFormIntegrity();
+        }
+        
+        // 🚨 DIAGNOSTIC AUTOMATIQUE TEMPS RÉEL - Lancé à chaque sauvegarde
+        console.log('🚨 LANCEMENT DIAGNOSTIC AUTOMATIQUE AVANT VALIDATION...');
+        if (window.realTimeDiagnosis && typeof realTimeDiagnosis === 'function') {
+            window.realTimeDiagnosis();
+        }
+        
+        // Récupérer les éléments du formulaire
+        const titleElement = document.getElementById('article-title');
+        const dateElement = document.getElementById('article-date');
+        const contentElement = document.getElementById('article-content');
+        const summaryElement = document.getElementById('article-summary');
+        const languageElement = document.getElementById('article-language');
+        const levelElement = document.getElementById('article-level');
+
+        // Vérifier que tous les éléments existent
+        const elementsCheck = {
+            title: !!titleElement,
+            date: !!dateElement,
+            content: !!contentElement,
+            summary: !!summaryElement,
+            language: !!languageElement,
+            level: !!levelElement
+        };
+
+        console.log('🔍 Vérification des éléments DOM:', elementsCheck);
+
+        if (!titleElement || !contentElement || !languageElement) {
+            console.error('❌ Éléments DOM critiques manquants!', elementsCheck);
+            alert('Erreur technique: Impossible d\'accéder aux champs du formulaire. Veuillez recharger la page.');
+            return;
+        }
+
+        // Récupérer les valeurs
+        const title = titleElement.value.trim();
+        const date = dateElement ? dateElement.value : '';
+        const content = contentElement.value.trim();
+        const summary = summaryElement ? summaryElement.value.trim() : '';
+        const language = languageElement.value;
+        const level = levelElement ? levelElement.value : 'intermediate';
+
+        console.log('📝 Données récupérées du formulaire:', {
+            title: `"${title}" (longueur: ${title.length})`,
+            date: `"${date}"`,
+            content: `"${content.substring(0, 50)}..." (longueur: ${content.length})`,
+            summary: `"${summary}" (longueur: ${summary.length})`,
+            language: `"${language}"`,
+            level: `"${level}"`
+        });
+
+        // Vérification détaillée de chaque champ
+        const titleValid = title && title.length > 0;
+        const contentValid = content && content.length > 0;
+        const languageValid = language && language.length > 0;
+
+        console.log('✅ Validation des champs:', {
+            title: titleValid,
+            content: contentValid,
+            language: languageValid
+        });
+
+        if (!titleValid || !contentValid || !languageValid) {
+            const missingFields = [];
+            if (!titleValid) missingFields.push('titre');
+            if (!contentValid) missingFields.push('contenu');
+            if (!languageValid) missingFields.push('langue');
+            
+            console.error('❌ Validation échouée. Champs problématiques:', {
+                title: titleValid ? 'OK' : `INVALIDE ("${title}")`,
+                content: contentValid ? 'OK' : `INVALIDE (${content.length} caractères)`,
+                language: languageValid ? 'OK' : `INVALIDE ("${language}")`
+            });
+            
+            // Message d'erreur plus détaillé
+            let errorMessage = `Les champs suivants sont obligatoires: ${missingFields.join(', ')}`;
+            
+            // Ajouter des détails spécifiques pour aider au débogage
+            if (!languageValid) {
+                errorMessage += `\n\nProblème de langue détecté: "${language}"`;
+                errorMessage += '\nVeuillez sélectionner une langue dans la liste déroulante.';
+            }
+            
+            alert(errorMessage);
+            return;
+        }
+
+        // Extraire les mots-clés du contenu
+        const keywords = this.extractKeywordsFromContent(content);
 
         const article = {
             id: this.currentEditingArticle ? this.currentEditingArticle.id : Date.now(),
@@ -1077,9 +1245,14 @@ class AdminManager {
             date,
             content,
             summary,
+            language,
+            level,
+            keywords,
             status: 'published',
+            type: 'custom',
             createdAt: this.currentEditingArticle ? this.currentEditingArticle.createdAt : new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
+            isFeatured: false
         };
 
         if (this.currentEditingArticle) {
@@ -1092,7 +1265,18 @@ class AdminManager {
         this.saveCustomArticles();
         this.hideArticleEditor();
         this.renderArticles();
+        
+        // Mettre à jour les statistiques de l'archive
+        if (window.archiveManager) {
+            archiveManager.updateStats();
+        }
+        
         this.showMessage('Article sauvegardé avec succès !', 'success');
+    }
+
+    extractKeywordsFromContent(content) {
+        const matches = content.match(/\[([^\]]+)\]/g);
+        return matches ? matches.map(match => match.slice(1, -1)) : [];
     }
 
     renderArticles() {
@@ -1103,9 +1287,24 @@ class AdminManager {
             return;
         }
 
+        const languageNames = {
+            'es': 'Español',
+            'it': 'Italiano', 
+            'pt': 'Português',
+            'ca': 'Català',
+            'fr': 'Français'
+        };
+
         const articlesHTML = this.customArticles.map(article => {
             const date = new Date(article.date).toLocaleDateString('fr-FR');
             const preview = article.content.substring(0, 150) + '...';
+            const languageName = languageNames[article.language] || 'Español';
+            const levelNames = {
+                'beginner': 'Débutant',
+                'intermediate': 'Intermédiaire',
+                'advanced': 'Avancé'
+            };
+            const levelName = levelNames[article.level] || 'Intermédiaire';
             
             return `
                 <div class="admin-item-card">
@@ -1127,7 +1326,7 @@ class AdminManager {
                         </div>
                     </div>
                     <div class="admin-item-meta">
-                        Créé le ${date} • ${article.status}
+                        Créé le ${date} • ${languageName} • ${levelName} • ${article.status}
                     </div>
                     <div class="admin-item-content">
                         ${preview}
@@ -1243,6 +1442,8 @@ class AdminManager {
     }
 
     saveWord() {
+        console.log('💾 saveWord() appelée');
+        
         const word = document.getElementById('word-key').value.trim();
         const es = document.getElementById('trans-input-es').value.trim();
         const it = document.getElementById('trans-input-it').value.trim();
@@ -1250,6 +1451,8 @@ class AdminManager {
         const ca = document.getElementById('trans-input-ca').value.trim();
         const fr = document.getElementById('trans-input-fr').value.trim();
         const grammar = document.getElementById('word-grammar').value.trim();
+        
+        console.log('📝 Données du formulaire:', { word, es, it, pt, ca, fr, grammar });
 
         if (!word) {
             alert('Le mot-clé est obligatoire');
@@ -1270,7 +1473,11 @@ class AdminManager {
             grammar: grammar || ''
         };
 
+        console.log('💿 Données à sauvegarder:', wordData);
+        
         this.customWords[word] = wordData;
+        console.log('📚 Mots personnalisés après ajout:', this.customWords);
+        
         this.saveCustomWords();
         this.hideWordEditor();
         this.renderWords();
@@ -1441,21 +1648,734 @@ class AdminManager {
             }, 3000);
         }
     }
+
+    // FONCTION DE DIAGNOSTIC POUR DÉBOGAGE ADMIN
+    diagnoseAdminForm() {
+        console.log('🔧 === DIAGNOSTIC FORMULAIRE ADMIN ===');
+        
+        // Vérifier que la section admin est visible
+        const adminSection = document.querySelector('.admin-section');
+        const articleEditor = document.getElementById('article-editor');
+        
+        console.log('📋 Visibilité des sections:', {
+            adminSection: adminSection ? (adminSection.style.display !== 'none') : 'INTROUVABLE',
+            articleEditor: articleEditor ? (articleEditor.style.display !== 'none') : 'INTROUVABLE'
+        });
+        
+        // Vérifier les éléments du formulaire
+        const elements = {
+            title: document.getElementById('article-title'),
+            content: document.getElementById('article-content'),
+            language: document.getElementById('article-language'),
+            level: document.getElementById('article-level'),
+            date: document.getElementById('article-date'),
+            summary: document.getElementById('article-summary')
+        };
+        
+        console.log('🔍 Éléments du formulaire:');
+        Object.entries(elements).forEach(([key, element]) => {
+            if (element) {
+                console.log(`  ✅ ${key}: trouvé, valeur="${element.value}", visible=${element.offsetParent !== null}`);
+            } else {
+                console.error(`  ❌ ${key}: INTROUVABLE`);
+            }
+        });
+        
+        // Tester la validation avec les valeurs actuelles
+        if (elements.title && elements.content && elements.language) {
+            const title = elements.title.value.trim();
+            const content = elements.content.value.trim();
+            const language = elements.language.value;
+            
+            console.log('📝 Validation avec valeurs actuelles:', {
+                title: `"${title}" (valide: ${title.length > 0})`,
+                content: `"${content.substring(0, 30)}..." (valide: ${content.length > 0})`,
+                language: `"${language}" (valide: ${language.length > 0})`
+            });
+            
+            const wouldPass = title.length > 0 && content.length > 0 && language.length > 0;
+            console.log(`🎯 Validation passerait: ${wouldPass}`);
+            
+            if (!wouldPass) {
+                console.warn('⚠️ La validation échouerait avec ces valeurs!');
+            }
+        } else {
+            console.error('❌ Impossible de tester la validation: éléments manquants');
+        }
+        
+        console.log('🔧 === FIN DIAGNOSTIC ===');
+        
+        // Retourner les informations pour utilisation
+        return {
+            elementsFound: Object.values(elements).filter(el => el !== null).length,
+            totalElements: Object.keys(elements).length,
+            elements: elements
+        };
+    }
+}
+
+// Archive Management System
+class ArchiveManager {
+    constructor() {
+        this.currentLevelFilter = 'all';
+        this.currentLanguageFilter = 'all';
+        this.currentSort = 'newest';
+        this.searchTerm = '';
+        
+        this.initializeEventListeners();
+        this.updateStats();
+    }
+
+    initializeEventListeners() {
+        // Archive navigation
+        document.getElementById('archive-btn').addEventListener('click', () => {
+            this.showArchiveSection();
+        });
+
+        // Archive controls
+        document.getElementById('archive-level-filter').addEventListener('change', (e) => {
+            this.setLevelFilter(e.target.value);
+        });
+
+        document.getElementById('archive-language-filter').addEventListener('change', (e) => {
+            this.setLanguageFilter(e.target.value);
+        });
+
+        document.getElementById('archive-sort').addEventListener('change', (e) => {
+            this.setSort(e.target.value);
+        });
+
+        // Search functionality
+        document.getElementById('archive-search-btn').addEventListener('click', () => {
+            this.toggleSearch();
+        });
+
+        document.getElementById('clear-search-btn').addEventListener('click', () => {
+            this.clearSearch();
+        });
+
+        document.getElementById('archive-search-input').addEventListener('input', (e) => {
+            this.setSearchTerm(e.target.value);
+        });
+    }
+
+    showArchiveSection() {
+        // Hide other sections
+        document.querySelector('.article-section').style.display = 'none';
+        document.querySelector('.grammar-section').style.display = 'none';
+        document.querySelector('.quiz-section').style.display = 'none';
+        document.getElementById('saved-words-section').style.display = 'none';
+        document.getElementById('admin-section').style.display = 'none';
+        
+        // Show archive section
+        document.getElementById('archive-section').style.display = 'block';
+        
+        // Update navigation buttons
+        document.getElementById('archive-btn').style.display = 'none';
+        document.getElementById('saved-words-btn').style.display = 'none';
+        document.getElementById('admin-btn').style.display = 'none';
+        document.getElementById('home-btn').style.display = 'block';
+        
+        this.renderArchive();
+    }
+
+    showHomeSection() {
+        // Show main sections
+        document.querySelector('.article-section').style.display = 'block';
+        document.querySelector('.grammar-section').style.display = 'block';
+        document.querySelector('.quiz-section').style.display = 'block';
+        
+        // Hide other sections
+        document.getElementById('archive-section').style.display = 'none';
+        document.getElementById('saved-words-section').style.display = 'none';
+        document.getElementById('admin-section').style.display = 'none';
+        
+        // Update navigation buttons
+        document.getElementById('archive-btn').style.display = 'block';
+        document.getElementById('saved-words-btn').style.display = 'block';
+        document.getElementById('admin-btn').style.display = 'block';
+        document.getElementById('home-btn').style.display = 'none';
+
+        // Load the most recent article on home
+        this.loadLatestArticle();
+    }
+
+    setLevelFilter(level) {
+        this.currentLevelFilter = level;
+        this.renderArchive();
+    }
+
+    setLanguageFilter(language) {
+        this.currentLanguageFilter = language;
+        this.renderArchive();
+    }
+
+    setSort(sort) {
+        this.currentSort = sort;
+        this.renderArchive();
+    }
+
+    toggleSearch() {
+        const searchBox = document.getElementById('archive-search-box');
+        const isVisible = searchBox.style.display !== 'none';
+        
+        if (isVisible) {
+            searchBox.style.display = 'none';
+        } else {
+            searchBox.style.display = 'block';
+            document.getElementById('archive-search-input').focus();
+        }
+    }
+
+    clearSearch() {
+        document.getElementById('archive-search-input').value = '';
+        this.setSearchTerm('');
+        this.toggleSearch();
+    }
+
+    setSearchTerm(term) {
+        this.searchTerm = term.toLowerCase();
+        this.renderArchive();
+    }
+
+    getAllArticles() {
+        // Utiliser uniquement les articles stockés via l'AdminManager
+        // Ces articles sont maintenant tous stockés en base Django via l'API
+        const articles = adminManager.customArticles || [];
+        
+        console.log('🔍 getAllArticles - Articles bruts du adminManager:', articles);
+        
+        const processedArticles = articles.map(article => ({
+            id: article.id,
+            title: article.title,
+            content: article.content,
+            language: article.language || 'es',
+            level: article.level || 'intermediate',
+            publication_date: article.date,
+            date: article.date, // Compatibilité
+            is_active: true,
+            keywords: article.keywords || this.extractKeywords(article.content),
+            summary: article.summary || '',
+            created_at: article.createdAt || new Date().toISOString(),
+            updated_at: article.updatedAt || new Date().toISOString()
+        }));
+        
+        console.log('🔍 getAllArticles - Articles traités:', processedArticles);
+        
+        return processedArticles;
+    }
+
+    getFilteredAndSortedArticles() {
+        let articles = this.getAllArticles();
+        
+        // Apply level filter
+        if (this.currentLevelFilter !== 'all') {
+            articles = articles.filter(article => 
+                (article.level || 'intermediate') === this.currentLevelFilter
+            );
+        }
+        
+        // Apply language filter
+        if (this.currentLanguageFilter !== 'all') {
+            articles = articles.filter(article => 
+                (article.language || 'es') === this.currentLanguageFilter
+            );
+        }
+        
+        // Apply search
+        if (this.searchTerm) {
+            articles = articles.filter(article => 
+                article.title.toLowerCase().includes(this.searchTerm) ||
+                article.content.toLowerCase().includes(this.searchTerm) ||
+                (article.summary && article.summary.toLowerCase().includes(this.searchTerm))
+            );
+        }
+        
+        // Apply sort
+        articles.sort((a, b) => {
+            switch (this.currentSort) {
+                case 'newest':
+                    return new Date(b.date) - new Date(a.date);
+                case 'oldest':
+                    return new Date(a.date) - new Date(b.date);
+                case 'title':
+                    return a.title.localeCompare(b.title);
+                default:
+                    return 0;
+            }
+        });
+        
+        return articles;
+    }
+
+    loadLatestArticle() {
+        const articles = this.getAllArticles();
+        const latest = articles.sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+        
+        if (latest) {
+            this.loadArticleIntoMain(latest);
+        }
+    }
+
+    loadArticleIntoMain(article) {
+        console.log('🔄 Chargement de l\'article dans la page principale:', article.title);
+        
+        // Update main article titles
+        const mainTitle = document.getElementById('article-main-title');
+        const articleTitle = document.getElementById('article-title');
+        const articleMeta = document.getElementById('article-meta');
+        const articleContent = document.getElementById('article-content');
+        
+        if (mainTitle) mainTitle.textContent = '📰 Artículo del día';
+        if (articleTitle) articleTitle.textContent = article.title;
+        
+        // Format article metadata with date, language and level
+        const articleDate = new Date(article.date).toLocaleDateString('fr-FR');
+        const languageNames = {
+            'es': 'Español',
+            'it': 'Italiano', 
+            'pt': 'Português',
+            'ca': 'Català',
+            'fr': 'Français'
+        };
+        const levelNames = {
+            'beginner': 'Débutant',
+            'intermediate': 'Intermédiaire',
+            'advanced': 'Avancé'
+        };
+        
+        const languageName = languageNames[article.language] || article.language;
+        const levelName = levelNames[article.level] || article.level;
+        
+        if (articleMeta) {
+            articleMeta.textContent = `${articleDate} • ${languageName} • Niveau: ${levelName}`;
+        }
+        
+        // Process content and make keywords clickable
+        let processedContent = article.content;
+        
+        if (article.keywords && article.keywords.length > 0) {
+            console.log('🔑 Mots-clés détectés:', article.keywords);
+            article.keywords.forEach(keyword => {
+                const regex = new RegExp(`\\[${keyword}\\]`, 'g');
+                processedContent = processedContent.replace(regex, `<span class="keyword" onclick="showTranslation('${keyword}')">${keyword}</span>`);
+            });
+        } else {
+            // Fallback for bracket notation
+            console.log('📝 Utilisation de la notation crochets pour détecter les mots-clés');
+            processedContent = processedContent.replace(/\[([^\]]+)\]/g, '<span class="keyword" onclick="showTranslation(\'$1\')">$1</span>');
+        }
+        
+        // Split content into paragraphs and update display
+        if (articleContent) {
+            const paragraphs = processedContent.split('\n\n').filter(p => p.trim());
+            articleContent.innerHTML = paragraphs.map(p => `<p>${p.trim()}</p>`).join('');
+        }
+        
+        // Re-initialize keywords after content update
+        setTimeout(() => {
+            initializeKeywords();
+        }, 100);
+        
+        console.log('✅ Article chargé avec succès');
+    }
+
+    // FONCTION DE RÉPARATION POUR LE FORMULAIRE ADMIN
+    ensureFormIntegrity() {
+        console.log('🔧 ensureFormIntegrity() - Vérification et réparation du formulaire');
+        
+        const languageElement = document.getElementById('article-language');
+        if (languageElement) {
+            // Si aucune valeur n'est sélectionnée, forcer la première option valide
+            if (!languageElement.value || languageElement.value === '') {
+                console.warn('⚠️ Langue non sélectionnée, force la valeur par défaut');
+                languageElement.value = 'es';
+                
+                // Si ça ne marche toujours pas, utiliser selectedIndex
+                if (!languageElement.value || languageElement.value === '') {
+                    languageElement.selectedIndex = 1; // Index 1 car index 0 est l'option disabled
+                    console.warn('⚠️ Langue forcée via selectedIndex');
+                }
+            }
+        }
+        
+        const levelElement = document.getElementById('article-level');
+        if (levelElement && (!levelElement.value || levelElement.value === '')) {
+            levelElement.value = 'intermediate';
+        }
+        
+        const dateElement = document.getElementById('article-date');
+        if (dateElement && (!dateElement.value || dateElement.value === '')) {
+            dateElement.value = new Date().toISOString().split('T')[0];
+        }
+        
+        console.log('✅ Intégrité du formulaire vérifiée');
+    }
+
+    renderArchive() {
+        const articles = this.getFilteredAndSortedArticles();
+        const grid = document.getElementById('archive-grid');
+        const emptyState = document.getElementById('empty-archive');
+        
+        if (articles.length === 0) {
+            grid.style.display = 'none';
+            emptyState.style.display = 'block';
+            return;
+        }
+        
+        grid.style.display = 'grid';
+        emptyState.style.display = 'none';
+        
+        const articlesHTML = articles.map(article => this.createArticleCardHTML(article)).join('');
+        grid.innerHTML = articlesHTML;
+        
+        this.updateStats();
+    }
+
+    createArticleCardHTML(article) {
+        const date = new Date(article.date).toLocaleDateString('fr-FR');
+        const preview = this.stripBrackets(article.content).substring(0, 120) + '...';
+        const keywords = article.keywords || this.extractKeywords(article.content);
+        const keywordsHTML = keywords.slice(0, 5).map(keyword => 
+            `<span class="archive-keyword">${keyword}</span>`
+        ).join('');
+        
+        const featuredBadge = article.isFeatured ? 
+            '<div class="featured-badge"><i class="fas fa-star"></i> Vedette</div>' : '';
+        
+        // Obtenir le nom de la langue
+        const languageNames = {
+            'es': 'Español',
+            'it': 'Italiano', 
+            'pt': 'Português',
+            'ca': 'Català',
+            'fr': 'Français'
+        };
+        const languageName = languageNames[article.language] || 'Español';
+        
+        return `
+            <div class="archive-article-card" data-article-id="${article.id}">
+                ${featuredBadge}
+                <div class="archive-article-header">
+                    <h4 class="archive-article-title">${article.title}</h4>
+                    <span class="archive-article-level">${article.level || 'intermediate'}</span>
+                </div>
+                
+                <div class="archive-article-meta">
+                    <div class="archive-meta-item">
+                        <i class="fas fa-calendar"></i>
+                        <span>${date}</span>
+                    </div>
+                    <div class="archive-meta-item">
+                        <i class="fas fa-tags"></i>
+                        <span>${keywords.length} mots-clés</span>
+                    </div>
+                    <div class="archive-meta-item">
+                        <i class="fas fa-language"></i>
+                        <span>${languageName}</span>
+                    </div>
+                </div>
+                
+                <div class="archive-article-preview">
+                    ${preview}
+                </div>
+                
+                <div class="archive-article-keywords">
+                    ${keywordsHTML}
+                </div>
+                
+                <div class="archive-article-actions">
+                    <button class="read-article-btn" onclick="event.stopPropagation(); archiveManager.readArticle('${article.id}')">
+                        <i class="fas fa-book-open"></i>
+                        Lire l'article
+                    </button>
+                    <span class="archive-article-date">${date}</span>
+                </div>
+            </div>
+        `;
+    }
+
+    stripBrackets(text) {
+        return text.replace(/\[([^\]]+)\]/g, '$1');
+    }
+
+    extractKeywords(content) {
+        const matches = content.match(/\[([^\]]+)\]/g);
+        return matches ? matches.map(match => match.slice(1, -1)) : [];
+    }
+
+    readArticle(articleId) {
+        console.log('🔍 ReadArticle appelé avec ID:', articleId);
+        
+        const articles = this.getAllArticles();
+        console.log('📚 Articles disponibles:', articles);
+        console.log('🔍 IDs des articles:', articles.map(a => `${a.id} (${typeof a.id})`));
+        
+        // Assurer que la comparaison fonctionne avec string et number
+        const article = articles.find(a => a.id == articleId || a.id === String(articleId));
+        
+        console.log('📖 Article trouvé:', article);
+        
+        if (article) {
+            this.loadArticleIntoMain(article);
+            this.showHomeSection();
+            
+            // Show success message
+            this.showMessage(`Article "${article.title}" chargé avec succès !`, 'success');
+        } else {
+            console.error('❌ Article non trouvé avec ID:', articleId);
+            this.showMessage(`Article avec ID ${articleId} non trouvé`, 'error');
+        }
+    }
+
+    updateStats() {
+        const allArticles = this.getAllArticles();
+        
+        // Mettre à jour les statistiques générales
+        document.getElementById('total-articles').textContent = allArticles.length;
+        
+        // Calculer les statistiques par niveau
+        const beginnerCount = allArticles.filter(a => (a.level || 'intermediate') === 'beginner').length;
+        const intermediateCount = allArticles.filter(a => (a.level || 'intermediate') === 'intermediate').length;
+        const advancedCount = allArticles.filter(a => (a.level || 'intermediate') === 'advanced').length;
+        
+        // Mettre à jour les éléments s'ils existent
+        const beginnerElement = document.getElementById('beginner-articles');
+        const intermediateElement = document.getElementById('intermediate-articles');
+        const advancedElement = document.getElementById('advanced-articles');
+        
+        if (beginnerElement) beginnerElement.textContent = beginnerCount;
+        if (intermediateElement) intermediateElement.textContent = intermediateCount;
+        if (advancedElement) advancedElement.textContent = advancedCount;
+        
+        // Mettre à jour les statistiques par langue
+        const languages = ['es', 'it', 'pt', 'ca', 'fr'];
+        languages.forEach(lang => {
+            const count = allArticles.filter(article => 
+                (article.language || 'es') === lang
+            ).length;
+            const countElement = document.getElementById(`count-lang-${lang}`);
+            if (countElement) {
+                countElement.textContent = count;
+            }
+        });
+    }
+
+    showMessage(message, type = 'success') {
+        // Create a temporary message
+        const messageEl = document.createElement('div');
+        messageEl.className = `admin-message ${type}`;
+        messageEl.innerHTML = `
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'info-circle'}"></i>
+            ${message}
+        `;
+        
+        // Insert into archive section if visible
+        const archiveSection = document.getElementById('archive-section');
+        if (archiveSection.style.display !== 'none') {
+            archiveSection.insertBefore(messageEl, archiveSection.firstChild);
+            
+            setTimeout(() => {
+                if (messageEl.parentNode) {
+                    messageEl.parentNode.removeChild(messageEl);
+                }
+            }, 3000);
+        }
+    }
 }
 
 // Initialize admin manager
 const adminManager = new AdminManager();
 
-// Update home button click handler to hide admin
+// Initialize archive manager
+const archiveManager = new ArchiveManager();
+
+// Initialize with latest article on page load
+document.addEventListener('DOMContentLoaded', () => {
+    archiveManager.loadLatestArticle();
+});
+
+// FONCTIONS GLOBALES DE DÉBOGAGE ADMIN (accessibles depuis la console)
+window.debugAdminForm = function() {
+    console.log('🎯 Lancement du diagnostic admin depuis window.debugAdminForm()');
+    if (window.adminManager && typeof adminManager.diagnoseAdminForm === 'function') {
+        return adminManager.diagnoseAdminForm();
+    } else {
+        console.error('❌ adminManager non disponible ou méthode manquante');
+        return null;
+    }
+};
+
+window.fillAdminTestData = function() {
+    console.log('📝 Remplissage du formulaire admin avec des données de test');
+    
+    const elements = {
+        title: document.getElementById('article-title'),
+        content: document.getElementById('article-content'),
+        language: document.getElementById('article-language'),
+        level: document.getElementById('article-level'),
+        date: document.getElementById('article-date'),
+        summary: document.getElementById('article-summary')
+    };
+    
+    if (elements.title) elements.title.value = 'Test Debug: Article de validation';
+    if (elements.content) elements.content.value = 'Ceci est un [test] de [validation] pour identifier le problème de sauvegarde. Le contenu contient des [mots-clés] pour vérifier l\'extraction automatique.';
+    if (elements.language) elements.language.value = 'es';
+    if (elements.level) elements.level.value = 'intermediate';
+    if (elements.date) elements.date.value = new Date().toISOString().split('T')[0];
+    if (elements.summary) elements.summary.value = 'Article de test pour le débogage';
+    
+    console.log('✅ Données de test ajoutées au formulaire');
+    
+    // Tester automatiquement la validation
+    setTimeout(() => {
+        window.debugAdminForm();
+    }, 100);
+};
+
+window.testAdminSave = function() {
+    console.log('💾 Test de la fonction saveArticle()');
+    if (window.adminManager && typeof adminManager.saveArticle === 'function') {
+        adminManager.saveArticle();
+    } else {
+        console.error('❌ adminManager non disponible ou méthode saveArticle manquante');
+    }
+};
+
+// DIAGNOSTIC TEMPS RÉEL - FONCTIONNE AU MOMENT EXACT DE L'ERREUR
+window.realTimeDiagnosis = function() {
+    console.log('🚨 === DIAGNOSTIC TEMPS RÉEL === 🚨');
+    
+    // 1. Vérifier l'état de l'éditeur
+    const editor = document.getElementById('article-editor');
+    console.log('📋 État de l\'éditeur:', {
+        exists: !!editor,
+        visible: editor ? editor.style.display !== 'none' : false,
+        offsetParent: editor ? !!editor.offsetParent : false
+    });
+    
+    // 2. Chercher TOUS les éléments possibles avec des IDs similaires
+    const allElements = document.querySelectorAll('[id*="article"]');
+    console.log('🔍 Tous les éléments avec "article" dans l\'ID:', 
+        Array.from(allElements).map(el => ({
+            id: el.id,
+            tagName: el.tagName,
+            type: el.type || 'N/A',
+            value: el.value || el.textContent?.substring(0, 30) || 'empty',
+            visible: !!el.offsetParent
+        }))
+    );
+    
+    // 3. Test direct des IDs exacts
+    const exactElements = {
+        'article-title': document.getElementById('article-title'),
+        'article-content': document.getElementById('article-content'), 
+        'article-language': document.getElementById('article-language'),
+        'article-level': document.getElementById('article-level'),
+        'article-date': document.getElementById('article-date'),
+        'article-summary': document.getElementById('article-summary')
+    };
+    
+    console.log('🎯 Éléments par ID exact:');
+    Object.entries(exactElements).forEach(([id, element]) => {
+        if (element) {
+            console.log(`  ✅ ${id}:`, {
+                exists: true,
+                tagName: element.tagName,
+                type: element.type || 'N/A',
+                value: `"${element.value}"`,
+                length: element.value ? element.value.length : 0,
+                trimmed: `"${element.value ? element.value.trim() : ''}"`,
+                trimmedLength: element.value ? element.value.trim().length : 0,
+                visible: !!element.offsetParent,
+                disabled: element.disabled,
+                readonly: element.readOnly
+            });
+        } else {
+            console.error(`  ❌ ${id}: INTROUVABLE`);
+        }
+    });
+    
+    // 4. Test de la logique de validation EXACTE
+    const titleEl = document.getElementById('article-title');
+    const contentEl = document.getElementById('article-content');
+    const languageEl = document.getElementById('article-language');
+    
+    if (titleEl && contentEl && languageEl) {
+        const title = titleEl.value.trim();
+        const content = contentEl.value.trim();
+        const language = languageEl.value;
+        
+        console.log('🧪 Test de validation:');
+        console.log('  📝 Valeurs brutes:', {
+            title: `"${titleEl.value}"`,
+            content: `"${contentEl.value.substring(0, 50)}..."`,
+            language: `"${languageEl.value}"`
+        });
+        
+        console.log('  📝 Valeurs après trim:', {
+            title: `"${title}"`,
+            content: `"${content.substring(0, 50)}..."`,
+            language: `"${language}"`
+        });
+        
+        console.log('  ✅ Longueurs:', {
+            title: title.length,
+            content: content.length,
+            language: language.length
+        });
+        
+        const titleValid = title && title.length > 0;
+        const contentValid = content && content.length > 0;
+        const languageValid = language && language.length > 0;
+        
+        console.log('  🎯 Résultats de validation:', {
+            titleValid,
+            contentValid,
+            languageValid,
+            wouldPass: titleValid && contentValid && languageValid
+        });
+        
+        if (!titleValid || !contentValid || !languageValid) {
+            console.error('❌ VALIDATION ÉCHOUERAIT - Problèmes détectés:');
+            if (!titleValid) console.error(`  - Titre: "${title}" (longueur: ${title.length})`);
+            if (!contentValid) console.error(`  - Contenu: "${content}" (longueur: ${content.length})`);
+            if (!languageValid) console.error(`  - Langue: "${language}" (longueur: ${language.length})`);
+        } else {
+            console.log('✅ VALIDATION RÉUSSIRAIT - Tous les champs sont valides');
+        }
+    } else {
+        console.error('❌ Impossible de tester la validation - éléments manquants:', {
+            title: !!titleEl,
+            content: !!contentEl,
+            language: !!languageEl
+        });
+    }
+    
+    console.log('🚨 === FIN DIAGNOSTIC TEMPS RÉEL === 🚨');
+    
+    return {
+        editorVisible: editor && editor.style.display !== 'none',
+        elementsFound: Object.values(exactElements).filter(el => el !== null).length,
+        canValidate: !!(titleEl && contentEl && languageEl)
+    };
+};
+
+console.log('🔧 Fonctions de débogage admin disponibles:');
+console.log('  window.debugAdminForm() - Diagnostic du formulaire');
+console.log('  window.fillAdminTestData() - Remplir avec données de test'); 
+console.log('  window.testAdminSave() - Tester la sauvegarde');
+console.log('  window.realTimeDiagnosis() - 🚨 DIAGNOSTIC TEMPS RÉEL 🚨');
+
+// Update home button click handler to handle all sections
 const originalHomeBtn = document.getElementById('home-btn');
 originalHomeBtn.addEventListener('click', () => {
-    // Hide admin section
-    document.getElementById('admin-section').style.display = 'none';
-    document.getElementById('admin-btn').style.display = 'block';
-    document.getElementById('saved-words-btn').style.display = 'block';
+    // Use the archive manager's showHomeSection method
+    archiveManager.showHomeSection();
 });
 
 console.log('🌟 LinguaRomana MVP initialized successfully!');
 console.log('📚 Ready to learn with news articles in Romance languages!');
 console.log('💾 Saved Words feature loaded!');
 console.log('⚙️ Admin panel loaded!');
+console.log('📚 Archive system loaded!');

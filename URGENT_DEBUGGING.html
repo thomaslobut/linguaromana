@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚨 DIAGNOSTIC URGENT - Admin Save Error</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .header {
+            background: #dc3545;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .error-simulation {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        textarea {
+            height: 120px;
+            resize: vertical;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 16px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .btn-danger {
+            background: #dc3545;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        .logs {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚨 DIAGNOSTIC URGENT</h1>
+        <p>Erreur persistante: "Les champs suivants sont obligatoires: titre, contenu"</p>
+        <p><strong>Cette page va identifier la cause exacte du problème!</strong></p>
+    </div>
+
+    <div class="grid">
+        <div class="section">
+            <h3>📝 Formulaire Test (Identique à l'original)</h3>
+            
+            <div class="form-group">
+                <label for="article-title">Titre de l'article</label>
+                <input type="text" id="article-title" placeholder="Ex: La inteligencia artificial revoluciona la medicina">
+            </div>
+
+            <div class="form-group">
+                <label for="article-date">Date</label>
+                <input type="date" id="article-date">
+            </div>
+
+            <div class="form-group">
+                <label for="article-language">Langue de l'article</label>
+                <select id="article-language" required>
+                    <option value="" disabled style="display: none;">-- Sélectionner une langue --</option>
+                    <option value="es" selected>🇪🇸 Español</option>
+                    <option value="it">🇮🇹 Italiano</option>
+                    <option value="pt">🇵🇹 Português</option>
+                    <option value="ca">🏴󠁥󠁳󠁣󠁴󠁿 Català</option>
+                    <option value="fr">🇫🇷 Français</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="article-level">Niveau de difficulté</label>
+                <select id="article-level">
+                    <option value="beginner">Débutant</option>
+                    <option value="intermediate" selected>Intermédiaire</option>
+                    <option value="advanced">Avancé</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="article-content">Contenu de l'article</label>
+                <textarea id="article-content" placeholder="Écrivez le contenu de l'article ici. Utilisez [mot-clé] pour marquer les mots qui auront des traductions."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="article-summary">Résumé (optionnel)</label>
+                <textarea id="article-summary" rows="3" placeholder="Bref résumé de l'article"></textarea>
+            </div>
+
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn" onclick="autoFill()">📝 Auto-remplir</button>
+                <button class="btn btn-danger" onclick="testSaveLogic()">🧪 Tester Logic Save</button>
+                <button class="btn" onclick="clearLogs()">🗑️ Clear Logs</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>🔍 Diagnostic en Temps Réel</h3>
+            
+            <div id="status" class="status status-error">
+                ❌ Prêt pour le diagnostic - Remplissez le formulaire et testez
+            </div>
+
+            <div class="error-simulation">
+                <h4>🎯 Simulation de l'Erreur Reportée</h4>
+                <p><strong>Erreur attendue:</strong> "Les champs suivants sont obligatoires: titre, contenu"</p>
+                <p><strong>Cause possible:</strong> Valeurs vides après .trim() malgré un affichage correct</p>
+            </div>
+
+            <h4>📊 Logs de Diagnostic</h4>
+            <div id="logs" class="logs">🚨 DIAGNOSTIC URGENT ACTIVÉ 🚨
+Attendez le test pour voir les logs détaillés...
+
+Instructions:
+1. Cliquez sur "Auto-remplir" pour remplir le formulaire
+2. Cliquez sur "Tester Logic Save" pour reproduire l'erreur
+3. Analysez les logs pour identifier la cause exacte
+
+Le diagnostic va révéler:
+- État exact des éléments DOM
+- Valeurs récupérées avant et après trim()
+- Logique de validation pas à pas
+- Cause précise de l'échec de validation
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let logs = [];
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${type.toUpperCase()}: ${message}`;
+            logs.push(logEntry);
+            
+            document.getElementById('logs').textContent = logs.join('\n');
+            console.log(logEntry);
+            
+            // Auto-scroll to bottom
+            const logsDiv = document.getElementById('logs');
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+
+        function clearLogs() {
+            logs = [];
+            document.getElementById('logs').textContent = '🗑️ Logs effacés - Prêt pour nouveau test\n';
+        }
+
+        function autoFill() {
+            log('📝 AUTO-REMPLISSAGE DU FORMULAIRE', 'info');
+            
+            document.getElementById('article-title').value = 'Test Urgent: Révolution IA';
+            document.getElementById('article-content').value = 'La [inteligencia] [artificial] transforme notre monde. Cette [tecnología] révolutionnaire change notre façon de [trabajar] et de [vivir].';
+            document.getElementById('article-language').value = 'es';
+            document.getElementById('article-level').value = 'intermediate';
+            document.getElementById('article-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('article-summary').value = 'Article urgent sur l\'IA pour diagnostic';
+            
+            log('✅ Formulaire auto-rempli avec données complètes', 'success');
+            document.getElementById('status').className = 'status status-success';
+            document.getElementById('status').textContent = '✅ Formulaire rempli - Prêt pour test de sauvegarde';
+        }
+
+        function testSaveLogic() {
+            log('🚨 === DÉBUT TEST LOGIC SAVE (REPRODUCTION EXACTE) ===', 'error');
+            
+            // Copie EXACTE de la logique de saveArticle()
+            const titleElement = document.getElementById('article-title');
+            const dateElement = document.getElementById('article-date');
+            const contentElement = document.getElementById('article-content');
+            const summaryElement = document.getElementById('article-summary');
+            const languageElement = document.getElementById('article-language');
+            const levelElement = document.getElementById('article-level');
+
+            // Vérifier que tous les éléments existent
+            const elementsCheck = {
+                title: !!titleElement,
+                date: !!dateElement,
+                content: !!contentElement,
+                summary: !!summaryElement,
+                language: !!languageElement,
+                level: !!levelElement
+            };
+
+            log(`🔍 Vérification des éléments DOM: ${JSON.stringify(elementsCheck)}`, 'info');
+
+            if (!titleElement || !contentElement || !languageElement) {
+                log('❌ Éléments DOM critiques manquants!', 'error');
+                document.getElementById('status').className = 'status status-error';
+                document.getElementById('status').textContent = '❌ ERREUR: Éléments DOM manquants';
+                return;
+            }
+
+            // Récupérer les valeurs EXACTEMENT comme dans le code original
+            const title = titleElement.value.trim();
+            const date = dateElement ? dateElement.value : '';
+            const content = contentElement.value.trim();
+            const summary = summaryElement ? summaryElement.value.trim() : '';
+            const language = languageElement.value;
+            const level = levelElement ? levelElement.value : 'intermediate';
+
+            log('📝 Valeurs BRUTES récupérées:', 'info');
+            log(`  title: "${titleElement.value}" (longueur: ${titleElement.value.length})`, 'info');
+            log(`  content: "${contentElement.value.substring(0, 50)}..." (longueur: ${contentElement.value.length})`, 'info');
+            log(`  language: "${languageElement.value}"`, 'info');
+
+            log('📝 Valeurs APRÈS TRIM:', 'info');
+            log(`  title: "${title}" (longueur: ${title.length})`, 'info');
+            log(`  content: "${content.substring(0, 50)}..." (longueur: ${content.length})`, 'info');
+            log(`  language: "${language}" (longueur: ${language.length})`, 'info');
+
+            // Validation EXACTE
+            const titleValid = title && title.length > 0;
+            const contentValid = content && content.length > 0;
+            const languageValid = language && language.length > 0;
+
+            log('✅ Résultats de validation:', 'info');
+            log(`  titleValid: ${titleValid}`, titleValid ? 'success' : 'error');
+            log(`  contentValid: ${contentValid}`, contentValid ? 'success' : 'error');
+            log(`  languageValid: ${languageValid}`, languageValid ? 'success' : 'error');
+
+            // Test de l'erreur exacte
+            if (!titleValid || !contentValid || !languageValid) {
+                const missingFields = [];
+                if (!titleValid) missingFields.push('titre');
+                if (!contentValid) missingFields.push('contenu');
+                if (!languageValid) missingFields.push('langue');
+                
+                const errorMessage = `Les champs suivants sont obligatoires: ${missingFields.join(', ')}`;
+                
+                log('❌ VALIDATION ÉCHOUÉE', 'error');
+                log(`❌ MESSAGE D'ERREUR: "${errorMessage}"`, 'error');
+                log('❌ CAUSE DÉTECTÉE:', 'error');
+                
+                if (!titleValid) {
+                    log(`  - TITRE INVALIDE: "${title}" (longueur après trim: ${title.length})`, 'error');
+                    if (titleElement.value.length > 0 && title.length === 0) {
+                        log(`  - PROBLÈME: Le titre contient uniquement des espaces!`, 'error');
+                    }
+                }
+                if (!contentValid) {
+                    log(`  - CONTENU INVALIDE: "${content}" (longueur après trim: ${content.length})`, 'error');
+                    if (contentElement.value.length > 0 && content.length === 0) {
+                        log(`  - PROBLÈME: Le contenu contient uniquement des espaces!`, 'error');
+                    }
+                }
+                if (!languageValid) {
+                    log(`  - LANGUE INVALIDE: "${language}" (longueur: ${language.length})`, 'error');
+                    log(`  - SELECTEDINDEX: ${languageElement.selectedIndex}`, 'error');
+                    log(`  - OPTIONS DISPONIBLES:`, 'error');
+                    for (let i = 0; i < languageElement.options.length; i++) {
+                        log(`    [${i}] value="${languageElement.options[i].value}" text="${languageElement.options[i].text}"`, 'error');
+                    }
+                }
+
+                document.getElementById('status').className = 'status status-error';
+                document.getElementById('status').textContent = `❌ ERREUR REPRODUITE: ${errorMessage}`;
+                
+                // Simulation de l'alert
+                log(`🚨 ALERT SIMULÉ: "${errorMessage}"`, 'error');
+                
+            } else {
+                log('🎉 VALIDATION RÉUSSIE - Tous les champs sont valides!', 'success');
+                document.getElementById('status').className = 'status status-success';
+                document.getElementById('status').textContent = '🎉 SUCCÈS: Validation réussie, sauvegarde possible';
+            }
+
+            log('🚨 === FIN TEST LOGIC SAVE ===', 'info');
+        }
+
+        // Auto-remplir la date au chargement
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('article-date').value = new Date().toISOString().split('T')[0];
+            log('🚀 Page chargée - Date auto-remplie', 'info');
+        });
+
+        // Monitoring des changements de formulaire
+        ['article-title', 'article-content', 'article-language'].forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.addEventListener('input', function() {
+                    log(`📝 Changement détecté dans ${id}: "${this.value}"`, 'debug');
+                });
+            }
+        });
+
+        log('🔧 Page de diagnostic urgent initialisée', 'success');
+        log('👉 Cliquez sur "Auto-remplir" puis "Tester Logic Save" pour reproduire l\'erreur', 'info');
+    </script>
+</body>
+</html>

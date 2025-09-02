@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Formulaire Admin - LinguaRomana</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        textarea {
+            height: 120px;
+            resize: vertical;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .success { background-color: #d4edda; border-color: #c3e6cb; color: #155724; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; color: #721c24; }
+        .info { background-color: #e7f3ff; border-color: #b8daff; color: #004085; }
+        pre { 
+            background: #f8f9fa; 
+            padding: 10px; 
+            border-radius: 4px; 
+            overflow-x: auto;
+            border: 1px solid #e9ecef;
+        }
+        .debug-output {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test du Formulaire Admin Article</h1>
+    
+    <div class="test-section info">
+        <h3>🎯 Objectif</h3>
+        <p>Cette page teste la fonctionnalité de sauvegarde d'articles de l'interface admin pour identifier pourquoi l'erreur "Le titre, le contenu et la langue sont obligatoires" apparaît.</p>
+    </div>
+
+    <div class="test-section">
+        <h3>📝 Formulaire de Test</h3>
+        <p>Identique au formulaire admin original</p>
+
+        <div class="form-group">
+            <label for="article-title">Titre de l'article</label>
+            <input type="text" id="article-title" placeholder="Ex: La inteligencia artificial revoluciona la medicina">
+        </div>
+
+        <div class="form-group">
+            <label for="article-date">Date</label>
+            <input type="date" id="article-date">
+        </div>
+
+        <div class="form-group">
+            <label for="article-language">Langue de l'article</label>
+            <select id="article-language" required>
+                <option value="" disabled>-- Sélectionner une langue --</option>
+                <option value="es" selected>🇪🇸 Español</option>
+                <option value="it">🇮🇹 Italiano</option>
+                <option value="pt">🇵🇹 Português</option>
+                <option value="ca">🏴󠁥󠁳󠁣󠁴󠁿 Català</option>
+                <option value="fr">🇫🇷 Français</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="article-level">Niveau de difficulté</label>
+            <select id="article-level">
+                <option value="beginner">Débutant</option>
+                <option value="intermediate" selected>Intermédiaire</option>
+                <option value="advanced">Avancé</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="article-content">Contenu de l'article</label>
+            <textarea id="article-content" placeholder="Écrivez le contenu de l'article ici. Utilisez [mot-clé] pour marquer les mots qui auront des traductions."></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="article-summary">Résumé (optionnel)</label>
+            <textarea id="article-summary" rows="3" placeholder="Bref résumé de l'article"></textarea>
+        </div>
+
+        <button class="btn" onclick="testValidation()">🔍 Tester la Validation</button>
+        <button class="btn" onclick="fillTestData()">📝 Remplir Données Test</button>
+        <button class="btn" onclick="clearForm()">🗑️ Vider Formulaire</button>
+        <button class="btn" onclick="simulateSave()">💾 Simuler Sauvegarde</button>
+    </div>
+
+    <div class="test-section">
+        <h3>📊 Résultats des Tests</h3>
+        <div id="test-results">
+            <p>Aucun test exécuté pour le moment.</p>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h3>🔍 Logs de Débogage</h3>
+        <div class="debug-output">
+            <pre id="debug-logs">Aucun log pour le moment.</pre>
+        </div>
+    </div>
+
+    <script>
+        let logMessages = [];
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${type.toUpperCase()}: ${message}`;
+            logMessages.push(logEntry);
+            
+            document.getElementById('debug-logs').textContent = logMessages.join('\n');
+            console.log(logEntry);
+        }
+
+        function fillTestData() {
+            document.getElementById('article-title').value = 'Test: Revolución de la Inteligencia Artificial';
+            document.getElementById('article-content').value = 'La [inteligencia] [artificial] está transformando el mundo moderno. Los [algoritmos] de [aprendizaje] automático permiten a las máquinas realizar tareas complejas que antes requerían intervención humana. Esta [tecnología] revolucionaria tiene aplicaciones en medicina, transporte, educación y muchos otros campos.';
+            document.getElementById('article-language').value = 'es';
+            document.getElementById('article-level').value = 'advanced';
+            document.getElementById('article-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('article-summary').value = 'Artículo sobre el impacto de la IA en diversos sectores.';
+            
+            log('Formulaire rempli avec des données de test', 'success');
+        }
+
+        function clearForm() {
+            document.getElementById('article-title').value = '';
+            document.getElementById('article-content').value = '';
+            document.getElementById('article-language').value = '';
+            document.getElementById('article-level').value = 'intermediate';
+            document.getElementById('article-date').value = '';
+            document.getElementById('article-summary').value = '';
+            
+            log('Formulaire vidé', 'info');
+        }
+
+        function testValidation() {
+            log('=== DÉBUT TEST VALIDATION ===', 'info');
+            
+            // Récupérer les éléments (même logique que script.js)
+            const titleElement = document.getElementById('article-title');
+            const contentElement = document.getElementById('article-content');
+            const languageElement = document.getElementById('article-language');
+            const levelElement = document.getElementById('article-level');
+            const dateElement = document.getElementById('article-date');
+            const summaryElement = document.getElementById('article-summary');
+
+            // Vérifier que les éléments existent
+            const elementsCheck = {
+                title: titleElement !== null,
+                content: contentElement !== null,
+                language: languageElement !== null,
+                level: levelElement !== null,
+                date: dateElement !== null,
+                summary: summaryElement !== null
+            };
+
+            log(`Éléments trouvés: ${JSON.stringify(elementsCheck)}`, 'info');
+
+            if (!titleElement || !contentElement || !languageElement) {
+                log('ERREUR: Éléments HTML manquants!', 'error');
+                return false;
+            }
+
+            // Récupérer les valeurs (même logique que script.js)
+            const title = titleElement.value.trim();
+            const content = contentElement.value.trim();
+            const language = languageElement.value;
+            const level = levelElement.value;
+            const date = dateElement.value;
+            const summary = summaryElement.value.trim();
+
+            const formData = {
+                title: `"${title}" (longueur: ${title.length})`,
+                content: `"${content.substring(0, 50)}..." (longueur: ${content.length})`,
+                language: `"${language}"`,
+                level: `"${level}"`,
+                date: `"${date}"`,
+                summary: `"${summary}" (longueur: ${summary.length})`
+            };
+
+            log(`Données récupérées: ${JSON.stringify(formData, null, 2)}`, 'info');
+
+            // Test de validation (même logique que script.js)
+            const titleValid = title && title.length > 0;
+            const contentValid = content && content.length > 0;
+            const languageValid = language && language.length > 0;
+
+            const validation = {
+                title: titleValid,
+                content: contentValid,
+                language: languageValid,
+                overall: titleValid && contentValid && languageValid
+            };
+
+            log(`Résultats validation: ${JSON.stringify(validation)}`, 'info');
+
+            // Afficher les résultats
+            const resultDiv = document.getElementById('test-results');
+            
+            if (validation.overall) {
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h4>✅ Validation Réussie</h4>
+                        <p>Tous les champs requis sont remplis correctement.</p>
+                        <ul>
+                            <li>Titre: "${title}"</li>
+                            <li>Contenu: ${content.length} caractères</li>
+                            <li>Langue: ${language}</li>
+                        </ul>
+                    </div>
+                `;
+                log('SUCCÈS: Validation réussie', 'success');
+            } else {
+                const missingFields = [];
+                if (!titleValid) missingFields.push('titre');
+                if (!contentValid) missingFields.push('contenu');
+                if (!languageValid) missingFields.push('langue');
+
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Validation Échouée</h4>
+                        <p>Champs manquants: ${missingFields.join(', ')}</p>
+                        <ul>
+                            <li>Titre: ${titleValid ? '✅' : '❌'} "${title}"</li>
+                            <li>Contenu: ${contentValid ? '✅' : '❌'} ${content.length} caractères</li>
+                            <li>Langue: ${languageValid ? '✅' : '❌'} "${language}"</li>
+                        </ul>
+                    </div>
+                `;
+                log(`ÉCHEC: Champs manquants: ${missingFields.join(', ')}`, 'error');
+            }
+
+            log('=== FIN TEST VALIDATION ===', 'info');
+            return validation.overall;
+        }
+
+        function simulateSave() {
+            log('=== SIMULATION SAUVEGARDE ===', 'info');
+            
+            if (testValidation()) {
+                // Simuler la logique de sauvegarde complète
+                const title = document.getElementById('article-title').value.trim();
+                const content = document.getElementById('article-content').value.trim();
+                const language = document.getElementById('article-language').value;
+                const level = document.getElementById('article-level').value;
+                const date = document.getElementById('article-date').value;
+                const summary = document.getElementById('article-summary').value.trim();
+
+                // Extraction des mots-clés
+                const keywords = content.match(/\[([^\]]+)\]/g);
+                const extractedKeywords = keywords ? keywords.map(k => k.replace(/[\[\]]/g, '')) : [];
+
+                const article = {
+                    id: Date.now(),
+                    title,
+                    content,
+                    language,
+                    level,
+                    date: date || new Date().toISOString().split('T')[0],
+                    summary,
+                    keywords: extractedKeywords,
+                    status: 'published',
+                    createdAt: new Date().toISOString()
+                };
+
+                log(`Article créé: ${JSON.stringify(article, null, 2)}`, 'success');
+                log(`Mots-clés extraits: [${extractedKeywords.join(', ')}]`, 'info');
+                
+                document.getElementById('test-results').innerHTML += `
+                    <div class="success" style="margin-top: 10px;">
+                        <h4>🎉 Sauvegarde Simulée Réussie</h4>
+                        <p>L'article "${title}" a été créé avec ${extractedKeywords.length} mot(s)-clé(s).</p>
+                    </div>
+                `;
+            } else {
+                log('ÉCHEC: Impossible de sauvegarder, validation échouée', 'error');
+            }
+        }
+
+        // Auto-remplissage de la date
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('article-date').value = new Date().toISOString().split('T')[0];
+            log('Page chargée, date auto-remplie', 'info');
+        });
+
+        // Logs des changements de formulaire
+        ['article-title', 'article-content', 'article-language'].forEach(id => {
+            document.getElementById(id).addEventListener('input', function() {
+                log(`Changement dans ${id}: "${this.value}"`, 'debug');
+            });
+        });
+    </script>
+</body>
+</html>
