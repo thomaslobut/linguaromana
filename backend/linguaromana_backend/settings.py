@@ -53,7 +53,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "corsheaders",
-    "authentication",  # LinguaRomana application (temporary fix for Heroku deployment)
+    "authentication",  # Use existing app name for deployment
 ]
 
 MIDDLEWARE = [
