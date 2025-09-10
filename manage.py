@@ -2,13 +2,17 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
-from pathlib import Path
 
 def main():
     """Run administrative tasks."""
     # Add backend directory to Python path
-    backend_dir = Path(__file__).resolve().parent / 'backend'
-    sys.path.insert(0, str(backend_dir))
+    import os.path
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    backend_dir = os.path.join(current_dir, 'backend')
+    sys.path.insert(0, backend_dir)
+    
+    # Change working directory to backend for relative imports
+    os.chdir(backend_dir)
     
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'linguaromana_backend.settings')
     try:
