@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Direct ArchiveManager</title>
+</head>
+<body>
+    <h1>Test Direct - ArchiveManager disponible ?</h1>
+    <div id="results"></div>
+    
+    <script>
+        console.log('🔍 TEST DIRECT: Page chargée');
+        
+        function updateResults(message) {
+            document.getElementById('results').innerHTML += '<p>' + message + '</p>';
+            console.log(message);
+        }
+        
+        // Charger script.js depuis Django
+        const script = document.createElement('script');
+        script.src = 'http://localhost:8000/static/script.js';
+        
+        script.onload = function() {
+            updateResults('✅ script.js chargé depuis Django');
+            
+            // Test immédiat
+            updateResults('🔍 Après chargement - window.archiveManager: ' + !!window.archiveManager);
+            updateResults('🔍 Après chargement - typeof archiveManager: ' + typeof window.archiveManager);
+            
+            // Attendre l'initialisation
+            setTimeout(() => {
+                updateResults('🔍 Après 500ms - window.archiveManager: ' + !!window.archiveManager);
+                
+                if (window.archiveManager) {
+                    updateResults('✅ archiveManager trouvé !');
+                    updateResults('🔍 loadLatestArticle méthode: ' + typeof window.archiveManager.loadLatestArticle);
+                    
+                    if (typeof window.archiveManager.loadLatestArticle === 'function') {
+                        updateResults('🔄 APPEL loadLatestArticle()...');
+                        try {
+                            window.archiveManager.loadLatestArticle();
+                            updateResults('✅ loadLatestArticle() appelé avec succès');
+                        } catch (error) {
+                            updateResults('❌ Erreur loadLatestArticle(): ' + error.message);
+                        }
+                    }
+                } else {
+                    updateResults('❌ archiveManager NON trouvé après 500ms');
+                    
+                    // Lister toutes les variables globales Manager
+                    const managers = Object.keys(window).filter(k => 
+                        k.toLowerCase().includes('manager') || k.includes('Manager')
+                    );
+                    updateResults('🔍 Variables Manager globales: ' + JSON.stringify(managers));
+                }
+            }, 500);
+        };
+        
+        script.onerror = function() {
+            updateResults('❌ Impossible de charger script.js');
+        };
+        
+        document.head.appendChild(script);
+    </script>
+</body>
+</html>
+
+
+
+
