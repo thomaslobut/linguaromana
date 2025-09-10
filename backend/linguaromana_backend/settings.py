@@ -150,7 +150,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Répertoires contenant les fichiers statiques
 STATICFILES_DIRS = [
-    BASE_DIR / "static",  # Points to backend/static files
+    BASE_DIR.parent / "static",  # Points to root static files (../static from backend)
 ]
 
 # Configuration WhiteNoise pour la compression et le cache
