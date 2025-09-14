@@ -54,10 +54,7 @@ fi
 
 print_success "Python 3 et Poetry détectés"
 
-# Retourner à la racine pour Poetry
-cd ..
-
-# Vérifier l'environnement Poetry
+# Vérifier l'environnement Poetry (depuis la racine du projet)
 print_status "Configuration de l'environnement Poetry..."
 if [ ! -f "poetry.lock" ]; then
     print_warning "Fichier poetry.lock non trouvé. Installation initiale..."
@@ -69,24 +66,23 @@ else
     print_success "Dépendances installées avec Poetry"
 fi
 
-# Aller dans le répertoire backend
-cd backend
+print_status "Exécution des tests depuis la racine avec Poetry..."
 
 # Vérifier les migrations
 print_status "Vérification des migrations Django..."
-poetry run python manage.py makemigrations --check --dry-run > /dev/null 2>&1 || {
+poetry run python backend/manage.py makemigrations --check --dry-run > /dev/null 2>&1 || {
     print_warning "Nouvelles migrations détectées. Création..."
-    poetry run python manage.py makemigrations
+    poetry run python backend/manage.py makemigrations
 }
 
-poetry run python manage.py migrate > /dev/null 2>&1
+poetry run python backend/manage.py migrate > /dev/null 2>&1
 print_success "Base de données à jour"
 
 # Tests de syntax
 print_status "Vérification de la syntaxe Python..."
-poetry run python -m py_compile authentication/utils.py
-poetry run python -m py_compile authentication/test_streak.py
-poetry run python -m py_compile authentication/views.py
+poetry run python -m py_compile backend/authentication/utils.py
+poetry run python -m py_compile backend/authentication/test_streak.py
+poetry run python -m py_compile backend/authentication/views.py
 print_success "Syntaxe Python validée"
 
 # Tests de streak system (critiques)
@@ -94,7 +90,7 @@ print_status "Exécution des tests critiques du système de flammes..."
 echo ""
 
 # Test de la règle principale 1
-if poetry run python manage.py test authentication.test_streak.StreakSystemTestCase.test_user_with_one_flame_gets_two_flames_next_day --verbosity=0 > /dev/null 2>&1; then
+if poetry run python backend/manage.py test authentication.test_streak.StreakSystemTestCase.test_user_with_one_flame_gets_two_flames_next_day --verbosity=0 > /dev/null 2>&1; then
     print_success "Règle 1: Flamme +1 jour suivant ✓"
 else
     print_error "Règle 1: ÉCHEC - Flamme +1 jour suivant"
@@ -102,7 +98,7 @@ else
 fi
 
 # Test de la règle principale 2  
-if poetry run python manage.py test authentication.test_streak.StreakSystemTestCase.test_user_with_one_flame_no_two_flames_same_day --verbosity=0 > /dev/null 2>&1; then
+if poetry run python backend/manage.py test authentication.test_streak.StreakSystemTestCase.test_user_with_one_flame_no_two_flames_same_day --verbosity=0 > /dev/null 2>&1; then
     print_success "Règle 2: Pas de double flamme même jour ✓"
 else
     print_error "Règle 2: ÉCHEC - Pas de double flamme même jour"
@@ -111,30 +107,27 @@ fi
 
 # Tests complets de streak
 print_status "Exécution de tous les tests de flammes..."
-if poetry run python run_streak_tests.py > /dev/null 2>&1; then
+if poetry run python backend/run_streak_tests.py > /dev/null 2>&1; then
     print_success "Tous les tests de flammes passent ✓"
 else
     print_error "Certains tests de flammes échouent"
     echo ""
     print_warning "Exécution avec détails:"
-    poetry run python run_streak_tests.py
+    poetry run python backend/run_streak_tests.py
     exit 1
 fi
 
 # Tests Django complets
 print_status "Exécution de tous les tests Django..."
-if poetry run python manage.py test authentication --verbosity=0 > /dev/null 2>&1; then
+if poetry run python backend/manage.py test authentication --verbosity=0 > /dev/null 2>&1; then
     print_success "Tous les tests Django passent ✓"
 else
     print_error "Certains tests Django échouent"
     echo ""
     print_warning "Exécution avec détails:"
-    poetry run python manage.py test authentication --verbosity=2
+    poetry run python backend/manage.py test authentication --verbosity=2
     exit 1
 fi
-
-# Retour au répertoire racine
-cd ..
 
 # Validation frontend basique
 print_status "Validation frontend basique..."
