@@ -90,3 +90,4 @@ class StaticFilesUnitTest(TestCase):
                 f"Production should use {expected_storage} for static files",
             )
 
+
