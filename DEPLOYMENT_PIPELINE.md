@@ -81,7 +81,7 @@ scripts/
 backend/
 ├── run_streak_tests.py    # Tests de flammes
 ├── run_all_tests.py       # Tests complets
-└── requirements.txt       # Dépendances Python
+└── (dépendances gérées par Poetry via pyproject.toml)
 ```
 
 ## 🔍 Tests Exécutés dans la Pipeline
@@ -159,14 +159,14 @@ Quand tous les tests passent :
 ### Avant de Pousser du Code
 
 ```bash
-# Script automatique recommandé
+# Script automatique recommandé (utilise Poetry)
 ./scripts/test-before-deploy.sh
 
-# Ou étapes manuelles :
+# Ou étapes manuelles avec Poetry :
+poetry install --only=main
 cd backend
-source venv/bin/activate
-python run_streak_tests.py
-python manage.py test authentication
+poetry run python run_streak_tests.py
+poetry run python manage.py test authentication
 cd .. && node -c script.js
 ```
 
