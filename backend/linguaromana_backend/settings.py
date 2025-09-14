@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "corsheaders",
     "authentication",  # Use existing app name for deployment
+    "django_extensions",  # For HTTPS development server
 ]
 
 MIDDLEWARE = [
