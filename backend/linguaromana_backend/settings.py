@@ -22,9 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ====================
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get(
-    "SECRET_KEY", "django-insecure-uh(7fnz28a(n5c0@w86%yerhliau57q=r6!cxx6yxm6)+9^a$&"
-)
+SECRET_KEY = os.environ.get("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
@@ -150,7 +148,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Répertoires contenant les fichiers statiques
 STATICFILES_DIRS = [
-    BASE_DIR.parent / "static",  # Points to root static files (../static from backend)
+    BASE_DIR / "static",  # Points to backend/static files
 ]
 
 # Configuration WhiteNoise pour la compression et le cache
