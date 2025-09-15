@@ -27,7 +27,7 @@ SECRET_KEY = os.environ.get(
 )
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
+DEBUG = os.environ.get("DEBUG", "True").lower() == "true"
 
 # Hosts autorisés pour Heroku
 ALLOWED_HOSTS = [
@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "corsheaders",
     "authentication",  # Use existing app name for deployment
+    "core",  # Main LinguaRomana app
     "django_extensions",  # For HTTPS development server
 ]
 
@@ -152,7 +153,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Répertoires contenant les fichiers statiques
 STATICFILES_DIRS = [
-    BASE_DIR.parent / "static",  # Points to project root static files
+    BASE_DIR / "static",  # Points to backend static files
 ]
 
 # Configuration WhiteNoise pour la compression et le cache

@@ -112,6 +112,9 @@ def run_critical_tests():
             "core.tests_deployment.PageFormatDeploymentTest.test_no_duplicate_grammar_sections_critical",
             "core.tests_deployment.PageFormatDeploymentTest.test_content_loading_integration_critical",
             "core.tests_deployment.PageFormatDeploymentTest.test_page_performance_critical",
+            "authentication.test_static_files.StaticFilesDeploymentTest.test_css_file_accessible",
+            "authentication.test_static_files.StaticFilesDeploymentTest.test_home_page_references_css",
+            "authentication.test_static_files.StaticFilesDeploymentTest.test_static_files_setting_configured",
             "core.tests_deployment.QuickSmokeTest",
         ]
 
@@ -237,5 +240,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
