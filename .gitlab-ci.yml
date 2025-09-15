@@ -249,7 +249,7 @@ before_script:
     - echo "📋 Validation format uniquement..."
     - cd backend && pip3 install -r requirements.txt
     - pip3 install beautifulsoup4
-    - python3 manage.py test core.tests_deployment.PageFormatDeploymentTest.test_home_page_structure_critical --verbosity=2
+    - python3 manage.py test core.tests.tests_deployment.PageFormatDeploymentTest.test_home_page_structure_critical --verbosity=2
   rules:
     - if: $CI_COMMIT_MESSAGE =~ /\[format-only\]/
 
@@ -268,7 +268,7 @@ before_script:
     - cd backend && pip3 install -r requirements.txt
     - pip3 install beautifulsoup4
     - python3 manage.py migrate
-    - python3 manage.py test core.tests_deployment.PageFormatDeploymentTest.test_comprehensive_article_api_critical --verbosity=2
+    - python3 manage.py test core.tests.tests_deployment.PageFormatDeploymentTest.test_comprehensive_article_api_critical --verbosity=2
   rules:
     - if: $CI_COMMIT_MESSAGE =~ /\[api-only\]/
 

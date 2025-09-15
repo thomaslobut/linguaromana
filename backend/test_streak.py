@@ -1,10 +1,13 @@
 from datetime import date, timedelta
 
+from core.models import UnifiedArticle, UserActivity, UserProfile, UserQuizResult
+from core.utils import (
+    get_user_streak_info,
+    reset_user_streak,
+    update_user_streak,
+)
 from django.contrib.auth.models import User
 from django.test import TestCase
-
-from .models import Article, UserActivity, UserProfile, UserQuizResult
-from .utils import get_user_streak_info, reset_user_streak, update_user_streak
 
 
 class StreakSystemTestCase(TestCase):
@@ -19,8 +22,8 @@ class StreakSystemTestCase(TestCase):
             user=self.user, current_streak=0, total_points=0, last_activity_date=None
         )
 
-        # Create a test article for quiz submissions
-        self.article = Article.objects.create(
+        # Create a test unified article for quiz submissions
+        self.article = UnifiedArticle.objects.create(
             title="Test Article",
             content="Test content",
             language="es",
@@ -55,6 +58,7 @@ class StreakSystemTestCase(TestCase):
 
         # Verify in database
         self.profile.refresh_from_db()
+
         self.assertEqual(self.profile.current_streak, 2)
         self.assertEqual(self.profile.last_activity_date, today)
 
@@ -270,7 +274,7 @@ class StreakIntegrationTestCase(TestCase):
             email="integration@example.com",
             password="testpass123",
         )
-        self.article = Article.objects.create(
+        self.article = UnifiedArticle.objects.create(
             title="Integration Test Article",
             content="Test content for integration",
             language="es",

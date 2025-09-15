@@ -1,3 +1,5 @@
+from datetime import date
+
 from django.contrib.auth.models import User
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
@@ -51,7 +53,7 @@ class UserQuizResult(models.Model):
     """Track user quiz results for gamification and progress"""
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    article = models.ForeignKey("Article", on_delete=models.CASCADE)
+    article = models.ForeignKey("UnifiedArticle", on_delete=models.CASCADE)
     score = models.PositiveIntegerField(
         validators=[MinValueValidator(0), MaxValueValidator(100)]
     )
@@ -124,75 +126,6 @@ class UserSavedWord(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.word.word}"
-
-
-class Article(models.Model):
-    """
-    Model for news articles used in language learning.
-
-    Each article has:
-    - One associated Quiz (via OneToOneField in Quiz model)
-    - One main GrammarNote (via OneToOneField in GrammarNote model)
-    - Multiple detailed ArticleGrammarNotes for specific words (optional)
-    """
-
-    title = models.CharField(max_length=200)
-    content = models.TextField()
-    language = models.CharField(max_length=5, choices=LANGUAGE_CHOICES)
-    level = models.CharField(
-        max_length=20,
-        choices=LEVEL_CHOICES,
-        default="intermediate",
-    )
-    publication_date = models.DateField()
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    # Metadata for content management
-    author = models.ForeignKey(
-        User,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="core_articles",
-        help_text="Content creator",
-    )
-    summary = models.TextField(blank=True, help_text="Brief article summary")
-    tags = models.CharField(
-        max_length=200, blank=True, help_text="Comma-separated tags"
-    )
-
-    def __str__(self):
-        return f"{self.title} ({self.language})"
-
-    @property
-    def has_quiz(self):
-        """Check if this article has an associated quiz"""
-        return hasattr(self, "quiz")
-
-    @property
-    def has_grammar_note(self):
-        """Check if this article has an associated grammar note"""
-        return hasattr(self, "grammar_note")
-
-    @property
-    def is_complete(self):
-        """Check if this article has both quiz and grammar note assigned"""
-        return self.has_quiz and self.has_grammar_note
-
-    def get_quiz(self):
-        """Get the associated quiz, return None if not found"""
-        return getattr(self, "quiz", None)
-
-    def get_grammar_note(self):
-        """Get the associated grammar note, return None if not found"""
-        return getattr(self, "grammar_note", None)
-
-    class Meta:
-        ordering = ["-publication_date"]
-        verbose_name = "Article"
-        verbose_name_plural = "Articles"
 
 
 class Word(models.Model):
@@ -291,168 +224,6 @@ class WordDefinition(models.Model):
         verbose_name_plural = "Word Definitions"
 
 
-class Quiz(models.Model):
-    """Quiz associated with an article"""
-
-    article = models.OneToOneField(
-        Article,
-        on_delete=models.CASCADE,
-        related_name="quiz",
-        help_text="Article that this quiz is associated with",
-    )
-    title = models.CharField(max_length=200, blank=True, help_text="Quiz title")
-    description = models.TextField(blank=True, help_text="Quiz description")
-    passing_score = models.PositiveIntegerField(
-        default=70,
-        validators=[MinValueValidator(0), MaxValueValidator(100)],
-        help_text="Minimum score required to pass (percentage)",
-    )
-    time_limit = models.PositiveIntegerField(
-        null=True, blank=True, help_text="Time limit in minutes (optional)"
-    )
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f"Quiz for {self.article.title}"
-
-    class Meta:
-        verbose_name = "Quiz"
-        verbose_name_plural = "Quizzes"
-
-
-class GrammarNote(models.Model):
-    """Main grammar note for each article (one-to-one relationship)"""
-
-    article = models.OneToOneField(
-        Article,
-        on_delete=models.CASCADE,
-        related_name="grammar_note",
-        help_text="Article this grammar note belongs to",
-    )
-    title = models.CharField(max_length=200, help_text="Grammar note title")
-    content = models.TextField(help_text="Main grammar explanation for the article")
-    key_concepts = models.TextField(
-        blank=True, help_text="Key grammar concepts covered in this article"
-    )
-    learning_objectives = models.TextField(
-        blank=True, help_text="What students should learn from this grammar note"
-    )
-    difficulty_level = models.CharField(
-        max_length=20,
-        choices=LEVEL_CHOICES,
-        default="intermediate",
-        help_text="Grammar difficulty level",
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f"Grammar Note: {self.article.title}"
-
-    class Meta:
-        verbose_name = "Grammar Note"
-        verbose_name_plural = "Grammar Notes"
-
-
-class ArticleGrammarNote(models.Model):
-    """Detailed grammar notes associated with an article and linked to word definitions"""
-
-    article = models.ForeignKey(
-        Article,
-        on_delete=models.CASCADE,
-        related_name="detailed_grammar_notes",
-        help_text="Article this grammar note belongs to",
-    )
-    word_definition = models.ForeignKey(
-        WordDefinition,
-        on_delete=models.CASCADE,
-        related_name="article_grammar_notes",
-        help_text="Word definition this note explains",
-    )
-    title = models.CharField(max_length=200, help_text="Grammar note title")
-    content = models.TextField(help_text="Detailed grammar explanation")
-    order = models.PositiveIntegerField(
-        default=1, help_text="Display order within the article"
-    )
-    is_key_concept = models.BooleanField(
-        default=True, help_text="Whether this is a key grammar concept"
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f"{self.article.title} - {self.title}"
-
-    class Meta:
-        unique_together = ["article", "word_definition"]
-        ordering = ["order", "title"]
-        verbose_name = "Article Grammar Note"
-        verbose_name_plural = "Article Grammar Notes"
-
-
-class QuizQuestion(models.Model):
-    """Quiz questions associated with quizzes and linked to word definitions"""
-
-    quiz = models.ForeignKey(
-        Quiz, on_delete=models.CASCADE, related_name="questions", null=True, blank=True
-    )
-
-    # Temporary field to maintain backward compatibility during migration
-    article = models.ForeignKey(
-        Article,
-        on_delete=models.CASCADE,
-        related_name="quiz_questions_temp",
-        null=True,
-        blank=True,
-    )
-
-    # Link to a specific word definition that this question tests
-    word_definition = models.ForeignKey(
-        WordDefinition,
-        on_delete=models.CASCADE,
-        related_name="quiz_questions",
-        help_text="The word definition this question tests",
-    )
-
-    question_text = models.TextField()
-    option_a = models.CharField(max_length=200)
-    option_b = models.CharField(max_length=200)
-    option_c = models.CharField(max_length=200)
-    option_d = models.CharField(max_length=200)
-    correct_option = models.CharField(
-        max_length=1, choices=[("A", "A"), ("B", "B"), ("C", "C"), ("D", "D")]
-    )
-    points = models.PositiveIntegerField(default=10)
-
-    # Question metadata
-    question_type = models.CharField(
-        max_length=20,
-        choices=[
-            ("vocabulary", "Vocabulary"),
-            ("grammar", "Grammar"),
-            ("comprehension", "Comprehension"),
-            ("translation", "Translation"),
-        ],
-        default="vocabulary",
-    )
-    difficulty_level = models.CharField(
-        max_length=20, choices=LEVEL_CHOICES, default="intermediate"
-    )
-
-    def __str__(self):
-        return (
-            f"Question for {self.quiz.article.title} - {self.word_definition.word.word}"
-        )
-
-    class Meta:
-        verbose_name = "Quiz Question"
-        verbose_name_plural = "Quiz Questions"
-        # Ensure one question per word definition per quiz
-        unique_together = ["quiz", "word_definition"]
-
-
 class Badge(models.Model):
     """Achievement badges for gamification"""
 
@@ -496,7 +267,7 @@ class ArticleWord(models.Model):
     """Many-to-many relationship between Articles and Words with additional context"""
 
     article = models.ForeignKey(
-        Article, on_delete=models.CASCADE, related_name="article_words"
+        "UnifiedArticle", on_delete=models.CASCADE, related_name="article_words"
     )
     word = models.ForeignKey(
         Word, on_delete=models.CASCADE, related_name="word_articles"
@@ -512,15 +283,7 @@ class ArticleWord(models.Model):
     )
     added_at = models.DateTimeField(auto_now_add=True)
 
-    # Link to grammar note for this word in this article (optional)
-    grammar_note = models.OneToOneField(
-        ArticleGrammarNote,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="article_word",
-        help_text="Grammar note explaining this word in this article",
-    )
+    # Note: grammar note functionality is now integrated into UnifiedArticle
 
     def __str__(self):
         return f"{self.article.title} → {self.word.word}"
@@ -556,7 +319,7 @@ class ContentSeries(models.Model):
 class ArticleSeries(models.Model):
     """Link articles to series with ordering"""
 
-    article = models.ForeignKey(Article, on_delete=models.CASCADE)
+    article = models.ForeignKey("UnifiedArticle", on_delete=models.CASCADE)
     series = models.ForeignKey(ContentSeries, on_delete=models.CASCADE)
     order_in_series = models.PositiveIntegerField()
 
@@ -567,150 +330,408 @@ class ArticleSeries(models.Model):
         verbose_name_plural = "Article Series"
 
 
-class ComprehensiveArticle(models.Model):
+class UnifiedArticle(models.Model):
     """
-    Comprehensive model that links Article, Quiz, and GrammarNote together.
-    Provides a unified interface to access all three related models.
+    Modèle unifié qui combine Article, Quiz, QuizQuestion, GrammarNote, et ArticleGrammarNote
+    en une seule structure cohérente et plus efficace.
     """
 
-    # Foreign key relationships to the three main models
-    article = models.OneToOneField(
-        Article,
-        on_delete=models.CASCADE,
-        related_name="comprehensive_view",
-        help_text="Associated article",
+    # ===== ARTICLE DATA =====
+    title = models.CharField(max_length=200, help_text="Article title")
+    content = models.TextField(help_text="Article content")
+    language = models.CharField(max_length=5, choices=LANGUAGE_CHOICES)
+    level = models.CharField(
+        max_length=20,
+        choices=LEVEL_CHOICES,
+        default="intermediate",
+        help_text="Article difficulty level",
     )
-    quiz = models.OneToOneField(
-        Quiz,
-        on_delete=models.CASCADE,
-        related_name="comprehensive_view",
-        help_text="Associated quiz",
+    publication_date = models.DateField(default=date.today)
+    is_active = models.BooleanField(default=True)
+
+    # Article metadata
+    author = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="unified_articles",
+        help_text="Content creator",
     )
-    grammar_note = models.OneToOneField(
-        GrammarNote,
-        on_delete=models.CASCADE,
-        related_name="comprehensive_view",
-        help_text="Associated grammar note",
+    summary = models.TextField(blank=True, help_text="Brief article summary")
+    tags = models.CharField(
+        max_length=200, blank=True, help_text="Comma-separated tags"
     )
 
-    # Metadata for the comprehensive view
+    # ===== QUIZ DATA =====
+    quiz_title = models.CharField(max_length=200, blank=True, help_text="Quiz title")
+    quiz_description = models.TextField(blank=True, help_text="Quiz description")
+    quiz_passing_score = models.PositiveIntegerField(
+        default=70,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text="Minimum score required to pass (percentage)",
+    )
+    quiz_time_limit = models.PositiveIntegerField(
+        null=True, blank=True, help_text="Time limit in minutes (optional)"
+    )
+    quiz_is_active = models.BooleanField(default=True)
+
+    # ===== MAIN GRAMMAR NOTE DATA =====
+    grammar_title = models.CharField(
+        max_length=200, blank=True, help_text="Main grammar note title"
+    )
+    grammar_content = models.TextField(
+        blank=True, help_text="Main grammar explanation for the article"
+    )
+    grammar_key_concepts = models.TextField(
+        blank=True, help_text="Key grammar concepts covered in this article"
+    )
+    grammar_learning_objectives = models.TextField(
+        blank=True, help_text="What students should learn from this grammar note"
+    )
+    grammar_difficulty_level = models.CharField(
+        max_length=20,
+        choices=LEVEL_CHOICES,
+        default="intermediate",
+        help_text="Grammar difficulty level",
+    )
+
+    # ===== QUIZ QUESTIONS DATA (JSON field) =====
+    quiz_questions_data = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Array of quiz questions with all their data",
+    )
+
+    # ===== DETAILED GRAMMAR NOTES DATA (JSON field) =====
+    detailed_grammar_notes_data = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Array of detailed grammar notes for specific words",
+    )
+
+    # ===== TIMESTAMPS =====
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    notes = models.TextField(
-        blank=True, help_text="Additional notes for this comprehensive view"
-    )
-    is_published = models.BooleanField(
-        default=False,
-        help_text="Whether this complete set is published and ready for students",
-    )
+
+    class Meta:
+        ordering = ["-publication_date", "-id"]
+        verbose_name = "Unified Article"
+        verbose_name_plural = "Unified Articles"
+        indexes = [
+            models.Index(fields=["language", "level"]),
+            models.Index(fields=["publication_date", "is_active"]),
+            models.Index(fields=["author"]),
+        ]
 
     def __str__(self):
-        return f"Comprehensive: {self.article.title}"
+        return f"{self.title} ({self.language})"
 
-    # Properties to access data from related models
+    # ===== ARTICLE PROPERTIES =====
     @property
-    def title(self):
-        """Get article title"""
-        return self.article.title
-
-    @property
-    def content(self):
-        """Get article content"""
-        return self.article.content
+    def has_quiz(self):
+        """Check if this article has quiz questions"""
+        return len(self.quiz_questions_data) > 0
 
     @property
-    def language(self):
-        """Get article language"""
-        return self.article.language
+    def has_grammar_note(self):
+        """Check if this article has a main grammar note"""
+        return bool(self.grammar_title and self.grammar_content)
 
     @property
-    def level(self):
-        """Get article level"""
-        return self.article.level
-
-    @property
-    def author(self):
-        """Get article author"""
-        return self.article.author
-
-    @property
-    def quiz_title(self):
-        """Get quiz title"""
-        return self.quiz.title
-
-    @property
-    def quiz_description(self):
-        """Get quiz description"""
-        return self.quiz.description
-
-    @property
-    def quiz_questions_count(self):
-        """Get number of quiz questions"""
-        return self.quiz.questions.count()
-
-    @property
-    def grammar_title(self):
-        """Get grammar note title"""
-        return self.grammar_note.title
-
-    @property
-    def grammar_content(self):
-        """Get grammar note content"""
-        return self.grammar_note.content
+    def has_detailed_grammar_notes(self):
+        """Check if this article has detailed grammar notes"""
+        return len(self.detailed_grammar_notes_data) > 0
 
     @property
     def is_complete(self):
-        """Check if all components are properly set up"""
-        return all(
-            [
-                self.article.title,
-                self.article.content,
-                self.quiz.title,
-                self.quiz.questions.exists(),  # Quiz has questions
-                self.grammar_note.title,
-                self.grammar_note.content,
-            ]
+        """Check if this article has both quiz and grammar note"""
+        return self.has_quiz and self.has_grammar_note
+
+    # ===== QUIZ METHODS =====
+    def add_quiz_question(
+        self,
+        word_definition,
+        question_text,
+        option_a,
+        option_b,
+        option_c,
+        option_d,
+        correct_option,
+        points=10,
+        question_type="vocabulary",
+        difficulty_level=None,
+    ):
+        """Add a quiz question to this article"""
+        if difficulty_level is None:
+            difficulty_level = self.level
+
+        question_data = {
+            "word_definition_id": word_definition.id,
+            "word": word_definition.word.word,
+            "word_definition": word_definition.grammar_note,
+            "word_usage_example": word_definition.usage_example,
+            "word_difficulty_level": word_definition.difficulty_level,
+            "question_text": question_text,
+            "option_a": option_a,
+            "option_b": option_b,
+            "option_c": option_c,
+            "option_d": option_d,
+            "correct_option": correct_option,
+            "points": points,
+            "question_type": question_type,
+            "difficulty_level": difficulty_level,
+        }
+
+        # Check if question for this word already exists
+        for existing_question in self.quiz_questions_data:
+            if existing_question.get("word_definition_id") == word_definition.id:
+                # Update existing question
+                existing_question.update(question_data)
+                self.save()
+                return existing_question
+
+        # Add new question
+        self.quiz_questions_data.append(question_data)
+        self.save()
+        return question_data
+
+    def remove_quiz_question(self, word_definition_id):
+        """Remove a quiz question by word definition ID"""
+        self.quiz_questions_data = [
+            q
+            for q in self.quiz_questions_data
+            if q.get("word_definition_id") != word_definition_id
+        ]
+        self.save()
+
+    def get_quiz_questions(self):
+        """Get all quiz questions for this article"""
+        return self.quiz_questions_data
+
+    def get_quiz_question(self, word_definition_id):
+        """Get a specific quiz question by word definition ID"""
+        for question in self.quiz_questions_data:
+            if question.get("word_definition_id") == word_definition_id:
+                return question
+        return None
+
+    # ===== DETAILED GRAMMAR NOTES METHODS =====
+    def add_detailed_grammar_note(
+        self, word_definition, title, content, order=1, is_key_concept=True
+    ):
+        """Add a detailed grammar note for a specific word"""
+        note_data = {
+            "word_definition_id": word_definition.id,
+            "word": word_definition.word.word,
+            "word_definition": word_definition.grammar_note,
+            "word_usage_example": word_definition.usage_example,
+            "title": title,
+            "content": content,
+            "order": order,
+            "is_key_concept": is_key_concept,
+        }
+
+        # Check if note for this word already exists
+        for existing_note in self.detailed_grammar_notes_data:
+            if existing_note.get("word_definition_id") == word_definition.id:
+                # Update existing note
+                existing_note.update(note_data)
+                self.save()
+                return existing_note
+
+        # Add new note
+        self.detailed_grammar_notes_data.append(note_data)
+        # Sort by order
+        self.detailed_grammar_notes_data.sort(
+            key=lambda x: (x.get("order", 1), x.get("title", ""))
+        )
+        self.save()
+        return note_data
+
+    def remove_detailed_grammar_note(self, word_definition_id):
+        """Remove a detailed grammar note by word definition ID"""
+        self.detailed_grammar_notes_data = [
+            note
+            for note in self.detailed_grammar_notes_data
+            if note.get("word_definition_id") != word_definition_id
+        ]
+        self.save()
+
+    def get_detailed_grammar_notes(self):
+        """Get all detailed grammar notes for this article, sorted by order"""
+        return sorted(
+            self.detailed_grammar_notes_data,
+            key=lambda x: (x.get("order", 1), x.get("title", "")),
         )
 
-    @property
-    def completion_status(self):
-        """Get detailed completion status"""
+    def get_detailed_grammar_note(self, word_definition_id):
+        """Get a specific detailed grammar note by word definition ID"""
+        for note in self.detailed_grammar_notes_data:
+            if note.get("word_definition_id") == word_definition_id:
+                return note
+        return None
+
+    # ===== CONVERSION METHODS =====
+    def to_article_dict(self):
+        """Convert to article dictionary format (for API compatibility)"""
         return {
-            "article_complete": bool(self.article.title and self.article.content),
-            "quiz_complete": bool(self.quiz.title and self.quiz.questions.exists()),
-            "grammar_complete": bool(
-                self.grammar_note.title and self.grammar_note.content
-            ),
-            "overall_complete": self.is_complete,
+            "id": self.id,
+            "title": self.title,
+            "content": self.content,
+            "language": self.language,
+            "level": self.level,
+            "publication_date": self.publication_date.isoformat(),
+            "is_active": self.is_active,
+            "author": self.author.username if self.author else None,
+            "summary": self.summary,
+            "tags": self.tags,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
         }
 
-    def get_all_components(self):
-        """Get all three components as a dictionary"""
+    def to_quiz_dict(self):
+        """Convert to quiz dictionary format (for API compatibility)"""
         return {
-            "article": self.article,
-            "quiz": self.quiz,
-            "grammar_note": self.grammar_note,
+            "id": self.id,
+            "article_id": self.id,
+            "title": self.quiz_title,
+            "description": self.quiz_description,
+            "passing_score": self.quiz_passing_score,
+            "time_limit": self.quiz_time_limit,
+            "is_active": self.quiz_is_active,
+            "questions": self.quiz_questions_data,
         }
 
+    def to_grammar_note_dict(self):
+        """Convert to grammar note dictionary format (for API compatibility)"""
+        return {
+            "id": self.id,
+            "article_id": self.id,
+            "title": self.grammar_title,
+            "content": self.grammar_content,
+            "key_concepts": self.grammar_key_concepts,
+            "learning_objectives": self.grammar_learning_objectives,
+            "difficulty_level": self.grammar_difficulty_level,
+        }
+
+    def to_comprehensive_dict(self):
+        """Convert to comprehensive article format (for API compatibility)"""
+        return {
+            "id": self.id,
+            "article": self.to_article_dict(),
+            "quiz": self.to_quiz_dict(),
+            "grammar_note": self.to_grammar_note_dict(),
+            "detailed_grammar_notes": self.get_detailed_grammar_notes(),
+            "is_published": self.is_active,  # Map is_active to is_published
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
+        }
+
+    # ===== VALIDATION METHODS =====
+    def clean(self):
+        """Custom validation"""
+        from django.core.exceptions import ValidationError
+
+        errors = {}
+
+        # Validate quiz questions format
+        if self.quiz_questions_data:
+            for i, question in enumerate(self.quiz_questions_data):
+                required_fields = [
+                    "word_definition_id",
+                    "question_text",
+                    "option_a",
+                    "option_b",
+                    "option_c",
+                    "option_d",
+                    "correct_option",
+                ]
+                for field in required_fields:
+                    if not question.get(field):
+                        errors["quiz_questions_data"] = (
+                            f"Question {i + 1}: Missing required field '{field}'"
+                        )
+                        break
+
+                # Validate correct_option
+                if question.get("correct_option") not in ["A", "B", "C", "D"]:
+                    errors["quiz_questions_data"] = (
+                        f"Question {i + 1}: Invalid correct_option"
+                    )
+
+        # Validate detailed grammar notes format
+        if self.detailed_grammar_notes_data:
+            for i, note in enumerate(self.detailed_grammar_notes_data):
+                required_fields = ["word_definition_id", "title", "content"]
+                for field in required_fields:
+                    if not note.get(field):
+                        errors["detailed_grammar_notes_data"] = (
+                            f"Note {i + 1}: Missing required field '{field}'"
+                        )
+                        break
+
+        if errors:
+            raise ValidationError(errors)
+
+    # ===== MIGRATION HELPERS =====
     @classmethod
-    def create_comprehensive(cls, article, quiz, grammar_note, **kwargs):
-        """
-        Create a comprehensive view linking all three components.
-        Validates that they are compatible (same language, etc.)
-        """
-        # Validate compatibility
-        if article.language != quiz.article.language:
-            raise ValueError("Article and Quiz must have the same language")
-        if article.id != quiz.article.id:
-            raise ValueError("Quiz must belong to the same article")
-        if article.id != grammar_note.article.id:
-            raise ValueError("Grammar note must belong to the same article")
-
-        return cls.objects.create(
-            article=article, quiz=quiz, grammar_note=grammar_note, **kwargs
+    def create_from_article(cls, article):
+        """Create UnifiedArticle from existing Article and related models"""
+        unified = cls.objects.create(
+            title=article.title,
+            content=article.content,
+            language=article.language,
+            level=article.level,
+            publication_date=article.publication_date,
+            is_active=article.is_active,
+            author=article.author,
+            summary=article.summary,
+            tags=article.tags,
         )
 
-    class Meta:
-        ordering = ["-created_at"]
-        verbose_name = "Comprehensive Article"
-        verbose_name_plural = "Comprehensive Articles"
+        # Migrate Quiz data
+        if hasattr(article, "quiz") and article.quiz:
+            quiz = article.quiz
+            unified.quiz_title = quiz.title
+            unified.quiz_description = quiz.description
+            unified.quiz_passing_score = quiz.passing_score
+            unified.quiz_time_limit = quiz.time_limit
+            unified.quiz_is_active = quiz.is_active
+
+            # Migrate QuizQuestions
+            for question in quiz.questions.all():
+                unified.add_quiz_question(
+                    word_definition=question.word_definition,
+                    question_text=question.question_text,
+                    option_a=question.option_a,
+                    option_b=question.option_b,
+                    option_c=question.option_c,
+                    option_d=question.option_d,
+                    correct_option=question.correct_option,
+                    points=question.points,
+                    question_type=question.question_type,
+                    difficulty_level=question.difficulty_level,
+                )
+
+        # Migrate GrammarNote data
+        if hasattr(article, "grammar_note") and article.grammar_note:
+            grammar = article.grammar_note
+            unified.grammar_title = grammar.title
+            unified.grammar_content = grammar.content
+            unified.grammar_key_concepts = grammar.key_concepts
+            unified.grammar_learning_objectives = grammar.learning_objectives
+            unified.grammar_difficulty_level = grammar.difficulty_level
+
+        # Migrate ArticleGrammarNotes
+        for detailed_note in article.detailed_grammar_notes.all():
+            unified.add_detailed_grammar_note(
+                word_definition=detailed_note.word_definition,
+                title=detailed_note.title,
+                content=detailed_note.content,
+                order=detailed_note.order,
+                is_key_concept=detailed_note.is_key_concept,
+            )
+
+        unified.save()
+        return unified

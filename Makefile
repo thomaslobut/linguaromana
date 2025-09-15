@@ -47,12 +47,12 @@ test-deployment: test ## 🚀 Alias pour test complet
 
 validate-format: ## 📋 Validation format page uniquement
 	@echo "$(BLUE)📋 Validation format page...$(NC)"
-	cd $(BACKEND_DIR) && $(PYTHON) manage.py test core.tests_deployment.PageFormatDeploymentTest.test_home_page_structure_critical --verbosity=2
+	cd $(BACKEND_DIR) && $(PYTHON) manage.py test core.tests.tests_deployment.PageFormatDeploymentTest.test_home_page_structure_critical --verbosity=2
 	@echo "$(GREEN)✅ Format validé$(NC)"
 
 validate-api: ## 🌐 Validation API uniquement
 	@echo "$(BLUE)🌐 Validation API...$(NC)"
-	cd $(BACKEND_DIR) && $(PYTHON) manage.py test core.tests_deployment.PageFormatDeploymentTest.test_comprehensive_article_api_critical --verbosity=2
+	cd $(BACKEND_DIR) && $(PYTHON) manage.py test core.tests.tests_deployment.PageFormatDeploymentTest.test_comprehensive_article_api_critical --verbosity=2
 	@echo "$(GREEN)✅ API validée$(NC)"
 
 deploy-check: test ## 🚀 Vérification complète avant déploiement
@@ -118,11 +118,11 @@ ci-test: ## 🤖 Tests pour CI/CD
 # Commandes de diagnostic
 debug-format: ## 🔧 Debug format page
 	@echo "$(BLUE)🔧 Debug format page...$(NC)"
-	cd $(BACKEND_DIR) && $(PYTHON) manage.py shell -c "from core.tests_deployment import PageFormatDeploymentTest; t = PageFormatDeploymentTest(); t.setUp(); t.test_home_page_structure_critical()"
+	cd $(BACKEND_DIR) && $(PYTHON) manage.py shell -c "from core.tests.tests_deployment import PageFormatDeploymentTest; t = PageFormatDeploymentTest(); t.setUp(); t.test_home_page_structure_critical()"
 
 debug-api: ## 🔧 Debug API
 	@echo "$(BLUE)🔧 Debug API...$(NC)"
-	cd $(BACKEND_DIR) && $(PYTHON) manage.py shell -c "from core.tests_deployment import PageFormatDeploymentTest; t = PageFormatDeploymentTest(); t.setUp(); t.test_comprehensive_article_api_critical()"
+	cd $(BACKEND_DIR) && $(PYTHON) manage.py shell -c "from core.tests.tests_deployment import PageFormatDeploymentTest; t = PageFormatDeploymentTest(); t.setUp(); t.test_comprehensive_article_api_critical()"
 
 status: ## 📊 Statut du projet
 	@echo "$(BLUE)📊 Statut LinguaRomana$(NC)"

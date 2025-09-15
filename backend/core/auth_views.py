@@ -195,7 +195,7 @@ def api_submit_quiz_result(request):
 
         from django.shortcuts import get_object_or_404
 
-        from .models import Article
+        from .models import UnifiedArticle
 
         article_id = request.data.get("article_id")
         score = request.data.get("score")
@@ -206,7 +206,7 @@ def api_submit_quiz_result(request):
                 status=400,
             )
 
-        article = get_object_or_404(Article, id=article_id)
+        article = get_object_or_404(UnifiedArticle, id=article_id)
         points_earned = max(0, int(score * 10))
 
         # Save or update quiz result

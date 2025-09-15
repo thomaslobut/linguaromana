@@ -102,10 +102,10 @@ Les vues Django retournent maintenant les informations de streak :
 python run_streak_tests.py
 
 # Option 2: Django standard
-python manage.py test core.test_streak
+python manage.py test core.tests.test_streak
 
 # Option 3: Test spécifique
-python manage.py test core.test_streak.StreakSystemTestCase.test_user_with_one_flame_gets_two_flames_next_day
+python manage.py test core.tests.test_streak.StreakSystemTestCase.test_user_with_one_flame_gets_two_flames_next_day
 ```
 
 ### Utiliser dans le code

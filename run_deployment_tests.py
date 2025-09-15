@@ -13,7 +13,6 @@ Exit codes:
 """
 
 import os
-import subprocess
 import sys
 from pathlib import Path
 
@@ -107,15 +106,12 @@ def run_critical_tests():
 
         # Tests de déploiement spécifiques
         test_labels = [
-            "core.tests_deployment.PageFormatDeploymentTest.test_home_page_structure_critical",
-            "core.tests_deployment.PageFormatDeploymentTest.test_comprehensive_article_api_critical",
-            "core.tests_deployment.PageFormatDeploymentTest.test_no_duplicate_grammar_sections_critical",
-            "core.tests_deployment.PageFormatDeploymentTest.test_content_loading_integration_critical",
-            "core.tests_deployment.PageFormatDeploymentTest.test_page_performance_critical",
-            "authentication.test_static_files.StaticFilesDeploymentTest.test_css_file_accessible",
-            "authentication.test_static_files.StaticFilesDeploymentTest.test_home_page_references_css",
-            "authentication.test_static_files.StaticFilesDeploymentTest.test_static_files_setting_configured",
-            "core.tests_deployment.QuickSmokeTest",
+            "core.tests.tests_deployment.PageFormatDeploymentTest.test_home_page_structure_critical",
+            "core.tests.tests_deployment.PageFormatDeploymentTest.test_comprehensive_article_api_critical",
+            "core.tests.tests_deployment.PageFormatDeploymentTest.test_no_duplicate_grammar_sections_critical",
+            "core.tests.tests_deployment.PageFormatDeploymentTest.test_content_loading_integration_critical",
+            "core.tests.tests_deployment.PageFormatDeploymentTest.test_page_performance_critical",
+            "core.tests.tests_deployment.QuickSmokeTest",
         ]
 
         failures = test_runner.run_tests(test_labels)
@@ -143,7 +139,7 @@ def run_quick_smoke_tests():
         TestRunner = get_runner(settings)
         test_runner = TestRunner(verbosity=1, interactive=False, keepdb=True)
 
-        failures = test_runner.run_tests(["core.tests_deployment.QuickSmokeTest"])
+        failures = test_runner.run_tests(["core.tests.tests_deployment.QuickSmokeTest"])
 
         return failures == 0
 

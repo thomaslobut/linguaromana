@@ -52,8 +52,8 @@ def run_streak_tests():
 
     streak_failures = test_runner.run_tests(
         [
-            "core.test_streak.StreakSystemTestCase",
-            "core.test_streak.StreakIntegrationTestCase",
+            "core.tests.test_streak.StreakSystemTestCase",
+            "core.tests.test_streak.StreakIntegrationTestCase",
         ]
     )
 

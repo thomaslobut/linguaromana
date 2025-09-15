@@ -90,7 +90,7 @@ print_status "Exécution des tests critiques du système de flammes..."
 echo ""
 
 # Test de la règle principale 1
-if poetry run python backend/manage.py test core.test_streak.StreakSystemTestCase.test_user_with_one_flame_gets_two_flames_next_day --verbosity=0 > /dev/null 2>&1; then
+if poetry run python backend/manage.py test core.tests.test_streak.StreakSystemTestCase.test_user_with_one_flame_gets_two_flames_next_day --verbosity=0 > /dev/null 2>&1; then
     print_success "Règle 1: Flamme +1 jour suivant ✓"
 else
     print_error "Règle 1: ÉCHEC - Flamme +1 jour suivant"
@@ -98,7 +98,7 @@ else
 fi
 
 # Test de la règle principale 2  
-if poetry run python backend/manage.py test core.test_streak.StreakSystemTestCase.test_user_with_one_flame_no_two_flames_same_day --verbosity=0 > /dev/null 2>&1; then
+if poetry run python backend/manage.py test core.tests.test_streak.StreakSystemTestCase.test_user_with_one_flame_no_two_flames_same_day --verbosity=0 > /dev/null 2>&1; then
     print_success "Règle 2: Pas de double flamme même jour ✓"
 else
     print_error "Règle 2: ÉCHEC - Pas de double flamme même jour"

@@ -5,15 +5,12 @@ Si ils échouent, le déploiement doit être bloqué
 """
 
 import json
-import re
 from datetime import date
 
 from bs4 import BeautifulSoup
+from core.models import UnifiedArticle
 from django.contrib.auth.models import User
 from django.test import Client, TestCase
-from django.urls import reverse
-
-from core.models import Article, ComprehensiveArticle, GrammarNote, Quiz
 
 
 class PageFormatDeploymentTest(TestCase):
@@ -28,8 +25,8 @@ class PageFormatDeploymentTest(TestCase):
             username="testuser", email="test@example.com", password="testpass123"
         )
 
-        # Créer des données de test complètes
-        self.article = Article.objects.create(
+        # Créer des données de test complètes avec UnifiedArticle
+        self.article = UnifiedArticle.objects.create(
             title="Test Article Déploiement",
             content="Ceci est un [test] d'article pour le déploiement. Il contient des [mots-clés] pour validation.",
             language="es",
@@ -38,32 +35,22 @@ class PageFormatDeploymentTest(TestCase):
             summary="Article de test pour déploiement",
             publication_date=date.today(),
             is_active=True,
+            # Données de grammaire intégrées
+            grammar_title="Test Grammaire Déploiement",
+            grammar_content="Note de grammaire de test pour validation.\n\nCeci est un paragraphe additionnel.",
+            grammar_key_concepts="Concept 1\nConcept 2\nConcept 3",
+            # Données de quiz intégrées
+            quiz_title="Test Quiz Déploiement",
+            quiz_description="Quiz de test pour validation",
         )
 
-        # Les objets sont créés automatiquement par les signaux Django
-        # Récupérer les objets créés automatiquement
-        self.grammar_note = self.article.grammar_note
-        self.quiz = self.article.quiz
-        self.comprehensive = self.article.comprehensive_view
-
-        # Mettre à jour les contenus avec des données de test
-        self.grammar_note.title = "Test Grammaire Déploiement"
-        self.grammar_note.content = "Note de grammaire de test pour validation.\n\nCeci est un paragraphe additionnel."
-        self.grammar_note.key_concepts = "Concept 1\nConcept 2\nConcept 3"
-        self.grammar_note.learning_objectives = "Objectif 1\nObjectif 2\nObjectif 3"
-        self.grammar_note.difficulty_level = "intermediate"
-        self.grammar_note.save()
-
-        self.quiz.title = "Test Quiz Déploiement"
-        self.quiz.description = "Quiz de test pour déploiement"
-        self.quiz.passing_score = 60
-        self.quiz.time_limit = 300
-        self.quiz.is_active = True
-        self.quiz.save()
-
-        self.comprehensive.is_published = True
-        self.comprehensive.notes = "Article complet de test pour déploiement"
-        self.comprehensive.save()
+        # Mettre à jour les données supplémentaires pour l'article unifié
+        self.article.grammar_learning_objectives = "Objectif 1\nObjectif 2\nObjectif 3"
+        self.article.grammar_difficulty_level = "intermediate"
+        self.article.quiz_passing_score = 60
+        self.article.quiz_time_limit = 300
+        self.article.quiz_is_active = True
+        self.article.save()
 
     def test_home_page_structure_critical(self):
         """TEST CRITIQUE: Structure de la page home"""
@@ -243,7 +230,7 @@ class PageFormatDeploymentTest(TestCase):
 
         # Mesurer le temps de réponse de la page home
         start_time = time.time()
-        response = self.client.get("/")
+        self.client.get("/")
         home_time = time.time() - start_time
 
         self.assertLess(
@@ -254,7 +241,7 @@ class PageFormatDeploymentTest(TestCase):
 
         # Mesurer le temps de réponse de l'API
         start_time = time.time()
-        response = self.client.get("/api/latest-comprehensive-article/")
+        self.client.get("/api/latest-comprehensive-article/")
         api_time = time.time() - start_time
 
         self.assertLess(
@@ -299,7 +286,6 @@ def run_deployment_tests():
     Fonction utilitaire pour exécuter les tests de déploiement
     Retourne True si tous les tests passent, False sinon
     """
-    import sys
 
     from django.conf import settings
     from django.test.utils import get_runner
@@ -310,8 +296,8 @@ def run_deployment_tests():
 
     # Exécuter uniquement les tests de déploiement
     test_labels = [
-        "core.tests_deployment.PageFormatDeploymentTest",
-        "core.tests_deployment.QuickSmokeTest",
+        "core.tests.tests_deployment.PageFormatDeploymentTest",
+        "core.tests.tests_deployment.QuickSmokeTest",
     ]
 
     failures = test_runner.run_tests(test_labels)

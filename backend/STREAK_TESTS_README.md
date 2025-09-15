@@ -57,16 +57,16 @@ python run_streak_tests.py
 ### Option 2 : Commande Django standard
 ```bash
 cd backend
-python manage.py test core.test_streak
+python manage.py test core.tests.test_streak
 ```
 
 ### Option 3 : Tests spécifiques
 ```bash
 # Test une classe spécifique
-python manage.py test core.test_streak.StreakSystemTestCase
+python manage.py test core.tests.test_streak.StreakSystemTestCase
 
 # Test une méthode spécifique
-python manage.py test core.test_streak.StreakSystemTestCase.test_user_with_one_flame_gets_two_flames_next_day
+python manage.py test core.tests.test_streak.StreakSystemTestCase.test_user_with_one_flame_gets_two_flames_next_day
 ```
 
 ### Option 4 : Tous les tests de l'app
@@ -209,5 +209,5 @@ Ces tests peuvent être intégrés dans votre pipeline CI/CD :
 - name: Run Streak Tests
   run: |
     cd backend
-    python manage.py test core.test_streak
+    python manage.py test core.tests.test_streak
 ```

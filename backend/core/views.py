@@ -16,11 +16,9 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from .models import (
-    Article,
     ArticleWord,
     Badge,
-    ComprehensiveArticle,
-    QuizQuestion,
+    UnifiedArticle,
     UserActivity,
     UserBadge,
     UserProfile,
@@ -54,9 +52,9 @@ def api_latest_article_with_quiz(request):
         # Determine today's language
         daily_language = get_daily_language()
 
-        # Get the latest article for today's language
+        # Get the latest unified article for today's language
         latest_article = (
-            Article.objects.filter(is_active=True, language=daily_language)
+            UnifiedArticle.objects.filter(is_active=True, language=daily_language)
             .order_by("-publication_date", "-id")
             .first()
         )
@@ -64,7 +62,7 @@ def api_latest_article_with_quiz(request):
         # Fallback to any language if no article found for today's language
         if not latest_article:
             latest_article = (
-                Article.objects.filter(is_active=True)
+                UnifiedArticle.objects.filter(is_active=True)
                 .order_by("-publication_date", "-id")
                 .first()
             )
@@ -78,48 +76,36 @@ def api_latest_article_with_quiz(request):
                 }
             )
 
-        # Get quiz questions with their word definitions
-        quiz_questions = []
-        if hasattr(latest_article, "quiz") and latest_article.quiz:
-            quiz_questions = latest_article.quiz.questions.select_related(
-                "word_definition__word"
-            ).order_by("id")
-        else:
-            # Fallback to old structure for backward compatibility
-            quiz_questions = (
-                QuizQuestion.objects.filter(article=latest_article)
-                .select_related("word_definition__word")
-                .order_by("id")
-            )
+        # Get quiz questions from the unified article's JSON data
+        quiz_questions = latest_article.get_quiz_questions()
 
         quiz_data = []
-        for question in quiz_questions:
+        for question_data in quiz_questions:
             quiz_data.append(
                 {
-                    "id": question.id,
-                    "question_text": question.question_text,
+                    "id": question_data.get("word_definition_id"),
+                    "question_text": question_data.get("question_text"),
                     "options": {
-                        "A": question.option_a,
-                        "B": question.option_b,
-                        "C": question.option_c,
-                        "D": question.option_d,
+                        "A": question_data.get("option_a"),
+                        "B": question_data.get("option_b"),
+                        "C": question_data.get("option_c"),
+                        "D": question_data.get("option_d"),
                     },
-                    "correct_option": question.correct_option,
-                    "points": question.points,
-                    "question_type": question.question_type,
+                    "correct_option": question_data.get("correct_option"),
+                    "points": question_data.get("points", 10),
+                    "question_type": question_data.get("question_type", "vocabulary"),
                     "word": {
-                        "word": question.word_definition.word.word,
-                        "definition": question.word_definition.grammar_note,
-                        "usage_example": question.word_definition.usage_example,
-                        "difficulty_level": question.word_definition.difficulty_level,
+                        "word": question_data.get("word"),
+                        "definition": question_data.get("word_definition"),
+                        "usage_example": question_data.get("word_usage_example"),
+                        "difficulty_level": question_data.get("word_difficulty_level"),
                     },
                 }
             )
 
-        # Get article words with their definitions
-        article_words = ArticleWord.objects.filter(
-            article=latest_article
-        ).select_related("word__definition")
+        # Get article words with their definitions - temporarily empty for UnifiedArticle
+        # TODO: Update ArticleWord model to work with UnifiedArticle or handle differently
+        article_words = []
 
         keywords = []
         for article_word in article_words:
@@ -190,37 +176,30 @@ def api_latest_article_with_quiz(request):
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def api_latest_comprehensive_article(request):
-    """Get the latest comprehensive article (with Article, Quiz, and GrammarNote) for today's language"""
+    """Get the latest comprehensive unified article for today's language"""
     try:
         # Determine today's language
         daily_language = get_daily_language()
 
-        # Get the latest comprehensive article for today's language
-        latest_comprehensive = (
-            ComprehensiveArticle.objects.select_related(
-                "article", "quiz", "grammar_note"
+        # Get the latest unified article for today's language
+        latest_article = (
+            UnifiedArticle.objects.filter(
+                is_active=True,
+                language=daily_language,
             )
-            .filter(
-                article__is_active=True,
-                article__language=daily_language,
-                is_published=True,
-            )
-            .order_by("-article__publication_date", "-created_at")
+            .order_by("-publication_date", "-created_at")
             .first()
         )
 
-        # Fallback to any language if no comprehensive article found for today's language
-        if not latest_comprehensive:
-            latest_comprehensive = (
-                ComprehensiveArticle.objects.select_related(
-                    "article", "quiz", "grammar_note"
-                )
-                .filter(article__is_active=True, is_published=True)
-                .order_by("-article__publication_date", "-created_at")
+        # Fallback to any language if no article found for today's language
+        if not latest_article:
+            latest_article = (
+                UnifiedArticle.objects.filter(is_active=True)
+                .order_by("-publication_date", "-created_at")
                 .first()
             )
 
-        if not latest_comprehensive:
+        if not latest_article:
             return Response(
                 {
                     "success": False,
@@ -229,72 +208,47 @@ def api_latest_comprehensive_article(request):
                 }
             )
 
-        # Get the related models
-        article = latest_comprehensive.article
-        quiz = latest_comprehensive.quiz
-        grammar_note = latest_comprehensive.grammar_note
+        # Use the unified article directly
+        article = latest_article
 
-        # Get quiz questions with their word definitions
-        quiz_questions = quiz.questions.select_related(
-            "word_definition__word"
-        ).order_by("id")
+        # Get quiz questions from the unified article's JSON data
+        quiz_questions_data = article.get_quiz_questions()
 
         quiz_data = []
-        for question in quiz_questions:
+        for question_data in quiz_questions_data:
             quiz_data.append(
                 {
-                    "id": question.id,
-                    "question_text": question.question_text,
+                    "id": question_data.get("word_definition_id"),
+                    "question_text": question_data.get("question_text"),
                     "options": {
-                        "A": question.option_a,
-                        "B": question.option_b,
-                        "C": question.option_c,
-                        "D": question.option_d,
+                        "A": question_data.get("option_a"),
+                        "B": question_data.get("option_b"),
+                        "C": question_data.get("option_c"),
+                        "D": question_data.get("option_d"),
                     },
-                    "correct_option": question.correct_option,
-                    "points": question.points,
-                    "question_type": question.question_type,
+                    "correct_option": question_data.get("correct_option"),
+                    "points": question_data.get("points", 10),
+                    "question_type": question_data.get("question_type", "vocabulary"),
                     "word": {
-                        "word": question.word_definition.word.word,
-                        "definition": question.word_definition.grammar_note,
-                        "usage_example": question.word_definition.usage_example,
-                        "difficulty_level": question.word_definition.difficulty_level,
+                        "word": question_data.get("word"),
+                        "definition": question_data.get("word_definition"),
+                        "usage_example": question_data.get("word_usage_example"),
+                        "difficulty_level": question_data.get("word_difficulty_level"),
                     },
                 }
             )
 
-        # Get article words with their definitions
-        article_words = ArticleWord.objects.filter(article=article).select_related(
-            "word__definition"
-        )
-
+        # Get article words - temporarily empty for unified article
+        # TODO: Update ArticleWord model to work with UnifiedArticle or integrate into unified model
         keywords = []
-        for article_word in article_words:
-            word_data = {
-                "word": article_word.word.word,
-                "position": article_word.position_in_text,
-                "context": article_word.context_sentence,
-                "is_key": article_word.is_key_vocabulary,
-            }
 
-            # Add definition if available
-            if hasattr(article_word.word, "definition"):
-                word_data["definition"] = {
-                    "grammar_note": article_word.word.definition.grammar_note,
-                    "usage_example": article_word.word.definition.usage_example,
-                    "difficulty_level": article_word.word.definition.difficulty_level,
-                    "etymology": article_word.word.definition.etymology,
-                }
-
-            keywords.append(word_data)
-
-        # Format comprehensive article data
+        # Format comprehensive article data using unified article
         comprehensive_data = {
-            "id": latest_comprehensive.id,
-            "is_published": latest_comprehensive.is_published,
-            "notes": latest_comprehensive.notes,
-            "created_at": latest_comprehensive.created_at.isoformat(),
-            "updated_at": latest_comprehensive.updated_at.isoformat(),
+            "id": article.id,
+            "is_published": True,  # Unified articles are published by default if is_active
+            "notes": f"Unified article: {article.title}",
+            "created_at": article.created_at.isoformat(),
+            "updated_at": article.updated_at.isoformat(),
             # Article data
             "article": {
                 "id": article.id,
@@ -308,25 +262,25 @@ def api_latest_comprehensive_article(request):
                 "tags": article.tags,
                 "author": article.author.username if article.author else None,
             },
-            # Quiz data
+            # Quiz data from unified article
             "quiz": {
-                "id": quiz.id,
-                "title": quiz.title,
-                "description": quiz.description,
-                "passing_score": quiz.passing_score,
-                "time_limit": quiz.time_limit,
-                "is_active": quiz.is_active,
+                "id": article.id,
+                "title": article.quiz_title,
+                "description": article.quiz_description,
+                "passing_score": article.quiz_passing_score,
+                "time_limit": article.quiz_time_limit,
+                "is_active": article.quiz_is_active,
                 "questions_count": len(quiz_data),
                 "questions": quiz_data,
             },
-            # Grammar note data
+            # Grammar note data from unified article
             "grammar_note": {
-                "id": grammar_note.id,
-                "title": grammar_note.title,
-                "content": grammar_note.content,
-                "key_concepts": grammar_note.key_concepts,
-                "learning_objectives": grammar_note.learning_objectives,
-                "difficulty_level": grammar_note.difficulty_level,
+                "id": article.id,
+                "title": article.grammar_title,
+                "content": article.grammar_content,
+                "key_concepts": article.grammar_key_concepts,
+                "learning_objectives": article.grammar_learning_objectives,
+                "difficulty_level": article.grammar_difficulty_level,
             },
             # Legacy compatibility fields
             "title": article.title,
@@ -338,8 +292,8 @@ def api_latest_comprehensive_article(request):
             "keywords": [kw["word"] for kw in keywords],
             "keywords_details": keywords,
             "quiz_questions": quiz_data,
-            # Completion status
-            "completion_status": latest_comprehensive.completion_status,
+            # Completion status based on unified article properties
+            "completion_status": "complete" if article.is_complete else "in_progress",
         }
 
         return Response(
@@ -348,17 +302,17 @@ def api_latest_comprehensive_article(request):
                 "message": "Article complet récupéré avec succès",
                 "comprehensive_article": comprehensive_data,
                 "debug_info": {
-                    "comprehensive_id": latest_comprehensive.id,
+                    "unified_article_id": article.id,
                     "article_id": article.id,
-                    "quiz_id": quiz.id,
-                    "grammar_note_id": grammar_note.id,
                     "publication_date": article.publication_date.isoformat(),
                     "keywords_count": len(keywords),
                     "quiz_questions_count": len(quiz_data),
                     "daily_language": daily_language,
                     "article_language": article.language,
                     "language_match": article.language == daily_language,
-                    "is_complete": latest_comprehensive.is_complete,
+                    "is_complete": article.is_complete,
+                    "has_quiz": article.has_quiz,
+                    "has_grammar_note": article.has_grammar_note,
                 },
             }
         )
@@ -379,13 +333,15 @@ def api_latest_comprehensive_article(request):
 def api_all_articles_with_quiz(request):
     """Get all published articles with their quiz counts"""
     try:
-        # Get all active articles with quiz question counts
-        articles = Article.objects.filter(is_active=True).order_by("-publication_date")
+        # Get all active unified articles with quiz question counts
+        articles = UnifiedArticle.objects.filter(is_active=True).order_by(
+            "-publication_date"
+        )
 
         articles_data = []
         for article in articles:
             # Count quiz questions
-            quiz_count = article.quiz_questions.count()
+            quiz_count = len(article.get_quiz_questions())
 
             # Get article words
             article_words = ArticleWord.objects.filter(article=article).select_related(
@@ -492,8 +448,8 @@ def api_create_article_with_quiz(request):
         else:
             pub_date = date.today()
 
-        # Create the article (signals will automatically create Quiz, GrammarNote, and ComprehensiveArticle)
-        article = Article.objects.create(
+        # Create the unified article with default quiz and grammar data
+        article = UnifiedArticle.objects.create(
             title=title,
             content=content,
             language=language,
@@ -502,15 +458,11 @@ def api_create_article_with_quiz(request):
             summary=summary,
             tags=tags,
             is_active=True,
+            quiz_title=f"Quiz for {title}",
+            quiz_description=f"Test your understanding of {title}",
+            grammar_title=f"Grammar notes for {title}",
+            grammar_content=f"Key grammar concepts covered in {title}",
         )
-
-        # Get the automatically created components
-        from .models import ComprehensiveArticle, GrammarNote, Quiz
-
-        # Refresh from DB to get related objects created by signals
-        article.refresh_from_db()
-        quiz = article.quiz
-        grammar_note = article.grammar_note
 
         # Extract keywords and create words/definitions
         import re
@@ -536,56 +488,38 @@ def api_create_article_with_quiz(request):
                     difficulty_level=level,
                 )
 
-            # Create the article-word relationship
-            position = content.find(f"[{keyword}]")
-            if position >= 0:
-                article_word, created = ArticleWord.objects.get_or_create(
-                    article=article,
-                    word=word,
-                    position_in_text=position,
-                    defaults={
-                        "context_sentence": content,
-                        "is_key_vocabulary": True,
-                    },
-                )
-
-                # Create a quiz question for this word
-                quiz_question = QuizQuestion.objects.create(
-                    quiz=quiz,
-                    article=article,  # Keep for backward compatibility during migration
-                    word_definition=word.definition,
-                    question_text=f"Que signifie le mot '{keyword}' dans ce contexte ?",
-                    option_a="Option A (à définir)",
-                    option_b="Option B (à définir)",
-                    option_c="Option C (à définir)",
-                    option_d="Option D (à définir)",
-                    correct_option="A",
-                    question_type="vocabulary",
-                    difficulty_level=level,
-                )
+            # Create a quiz question for this word in the unified article
+            article.add_quiz_question(
+                word_definition=word.definition,
+                question_text=f"Que signifie le mot '{keyword}' dans ce contexte ?",
+                option_a="Option A (à définir)",
+                option_b="Option B (à définir)",
+                option_c="Option C (à définir)",
+                option_d="Option D (à définir)",
+                correct_option="A",
+                question_type="vocabulary",
+                difficulty_level=level,
+            )
 
         # Handle grammar note data if provided
         grammar_data = request.data.get("grammar_note")
         if grammar_data and isinstance(grammar_data, dict):
-            # Update the automatically created grammar note with provided data
+            # Update the unified article's grammar data
             if grammar_data.get("title"):
-                grammar_note.title = grammar_data["title"].strip()
+                article.grammar_title = grammar_data["title"].strip()
             if grammar_data.get("content"):
-                grammar_note.content = grammar_data["content"].strip()
+                article.grammar_content = grammar_data["content"].strip()
             if grammar_data.get("difficulty_level"):
-                grammar_note.difficulty_level = grammar_data["difficulty_level"]
+                article.grammar_difficulty_level = grammar_data["difficulty_level"]
             if grammar_data.get("key_concepts"):
-                grammar_note.key_concepts = grammar_data["key_concepts"].strip()
+                article.grammar_key_concepts = grammar_data["key_concepts"].strip()
             if grammar_data.get("learning_objectives"):
-                grammar_note.learning_objectives = grammar_data[
+                article.grammar_learning_objectives = grammar_data[
                     "learning_objectives"
                 ].strip()
 
-            # Save updated grammar note
-            grammar_note.save()
-
-        # Get the automatically created comprehensive article
-        comprehensive_article = article.comprehensive_view
+            # Save updated unified article
+            article.save()
 
         # Format response
         article_data = {
@@ -606,34 +540,32 @@ def api_create_article_with_quiz(request):
         return Response(
             {
                 "success": True,
-                "message": "Article complet créé avec succès",
+                "message": "Article unifié créé avec succès",
                 "article": article_data,
                 "quiz": {
-                    "id": quiz.id,
-                    "title": quiz.title,
-                    "description": quiz.description,
-                    "questions_count": quiz.questions.count(),
+                    "id": article.id,
+                    "title": article.quiz_title,
+                    "description": article.quiz_description,
+                    "questions_count": len(article.get_quiz_questions()),
                 },
                 "grammar_note": {
-                    "id": grammar_note.id,
-                    "title": grammar_note.title,
-                    "content": grammar_note.content,
-                    "difficulty_level": grammar_note.difficulty_level,
+                    "id": article.id,
+                    "title": article.grammar_title,
+                    "content": article.grammar_content,
+                    "difficulty_level": article.grammar_difficulty_level,
                 },
-                "comprehensive_article": {
-                    "id": comprehensive_article.id,
-                    "is_published": comprehensive_article.is_published,
-                    "completion_status": comprehensive_article.completion_status,
+                "unified_article": {
+                    "id": article.id,
+                    "has_quiz": article.has_quiz,
+                    "has_grammar_note": article.has_grammar_note,
+                    "is_complete": article.is_complete,
                 },
                 "debug_info": {
                     "article_id": article.id,
-                    "quiz_id": quiz.id,
-                    "grammar_note_id": grammar_note.id,
-                    "comprehensive_id": comprehensive_article.id,
                     "keywords_extracted": len(keywords),
                     "quiz_questions_created": len(keywords),
                     "publication_date": article.publication_date.isoformat(),
-                    "is_complete": comprehensive_article.is_complete,
+                    "is_complete": article.is_complete,
                 },
             },
             status=status.HTTP_201_CREATED,

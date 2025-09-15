@@ -119,19 +119,19 @@ export DEBUG="False"
 ```bash
 # Test structure HTML uniquement
 cd backend
-python manage.py test core.tests_deployment.PageFormatDeploymentTest.test_home_page_structure_critical
+python manage.py test core.tests.tests_deployment.PageFormatDeploymentTest.test_home_page_structure_critical
 
 # Test API uniquement  
-python manage.py test core.tests_deployment.PageFormatDeploymentTest.test_comprehensive_article_api_critical
+python manage.py test core.tests.tests_deployment.PageFormatDeploymentTest.test_comprehensive_article_api_critical
 
 # Test performance uniquement
-python manage.py test core.tests_deployment.PageFormatDeploymentTest.test_page_performance_critical
+python manage.py test core.tests.tests_deployment.PageFormatDeploymentTest.test_page_performance_critical
 ```
 
 ### Debug avec Django Shell
 ```python
 # Tester la structure
-from core.tests_deployment import PageFormatDeploymentTest
+from core.tests.tests_deployment import PageFormatDeploymentTest
 test = PageFormatDeploymentTest()
 test.setUp()
 test.test_home_page_structure_critical()

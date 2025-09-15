@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 import os
+import sys
 from pathlib import Path
 
 import dj_database_url
@@ -54,7 +55,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "corsheaders",
-    "authentication",  # Use existing app name for deployment
+    # "authentication",  # Use existing app name for deployment
     "core",  # Main LinguaRomana app
     "django_extensions",  # For HTTPS development server
 ]
@@ -202,7 +203,7 @@ TEMPLATES[0]["DIRS"] = [BASE_DIR / "templates"]
 
 # Configuration de sécurité pour la production
 # Ne pas forcer HTTPS pendant les tests
-import sys
+
 
 TESTING = "test" in sys.argv
 

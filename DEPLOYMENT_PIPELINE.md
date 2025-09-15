@@ -89,8 +89,8 @@ backend/
 ### Tests de Streak (Critiques)
 ```bash
 # Tests des règles principales
-python manage.py test core.test_streak.StreakSystemTestCase.test_user_with_one_flame_gets_two_flames_next_day
-python manage.py test core.test_streak.StreakSystemTestCase.test_user_with_one_flame_no_two_flames_same_day
+python manage.py test core.tests.test_streak.StreakSystemTestCase.test_user_with_one_flame_gets_two_flames_next_day
+python manage.py test core.tests.test_streak.StreakSystemTestCase.test_user_with_one_flame_no_two_flames_same_day
 
 # Tests complets (10 tests)
 python run_streak_tests.py
@@ -99,7 +99,7 @@ python run_streak_tests.py
 ### Tests Django Complets
 ```bash
 # Tous les tests de l'app authentication
-python manage.py test authentication
+python manage.py test
 
 # Avec migrations et setup
 python run_all_tests.py
