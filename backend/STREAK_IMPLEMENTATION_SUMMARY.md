@@ -102,15 +102,15 @@ Les vues Django retournent maintenant les informations de streak :
 python run_streak_tests.py
 
 # Option 2: Django standard
-python manage.py test authentication.test_streak
+python manage.py test core.test_streak
 
 # Option 3: Test spécifique
-python manage.py test authentication.test_streak.StreakSystemTestCase.test_user_with_one_flame_gets_two_flames_next_day
+python manage.py test core.test_streak.StreakSystemTestCase.test_user_with_one_flame_gets_two_flames_next_day
 ```
 
 ### Utiliser dans le code
 ```python
-from authentication.utils import update_user_streak
+from core.utils import update_user_streak
 
 # Automatiquement appelé lors de la soumission de quiz
 # Mais peut être utilisé manuellement :

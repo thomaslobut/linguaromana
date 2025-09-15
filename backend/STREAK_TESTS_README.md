@@ -57,16 +57,16 @@ python run_streak_tests.py
 ### Option 2 : Commande Django standard
 ```bash
 cd backend
-python manage.py test authentication.test_streak
+python manage.py test core.test_streak
 ```
 
 ### Option 3 : Tests spécifiques
 ```bash
 # Test une classe spécifique
-python manage.py test authentication.test_streak.StreakSystemTestCase
+python manage.py test core.test_streak.StreakSystemTestCase
 
 # Test une méthode spécifique
-python manage.py test authentication.test_streak.StreakSystemTestCase.test_user_with_one_flame_gets_two_flames_next_day
+python manage.py test core.test_streak.StreakSystemTestCase.test_user_with_one_flame_gets_two_flames_next_day
 ```
 
 ### Option 4 : Tous les tests de l'app
@@ -92,7 +92,7 @@ backend/
 
 ### `update_user_streak(user, activity_date=None)`
 ```python
-from authentication.utils import update_user_streak
+from core.utils import update_user_streak
 
 # Met à jour le streak d'un utilisateur pour une date donnée
 result = update_user_streak(user)
@@ -102,7 +102,7 @@ print(result)
 
 ### `reset_user_streak(user)`
 ```python
-from authentication.utils import reset_user_streak
+from core.utils import reset_user_streak
 
 # Remet le streak à 0
 result = reset_user_streak(user)
@@ -112,7 +112,7 @@ print(result)
 
 ### `get_user_streak_info(user)`
 ```python
-from authentication.utils import get_user_streak_info
+from core.utils import get_user_streak_info
 
 # Récupère les informations de streak
 info = get_user_streak_info(user)
@@ -150,7 +150,7 @@ Pour vérifier manuellement le système :
 ```python
 # Dans le shell Django (python manage.py shell)
 from django.contrib.auth.models import User
-from authentication.utils import *
+from core.utils import *
 from datetime import date, timedelta
 
 # Créer un utilisateur test
@@ -209,5 +209,5 @@ Ces tests peuvent être intégrés dans votre pipeline CI/CD :
 - name: Run Streak Tests
   run: |
     cd backend
-    python manage.py test authentication.test_streak
+    python manage.py test core.test_streak
 ```

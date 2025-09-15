@@ -44,14 +44,14 @@ jobs:
 
       - name: ⚡ Quick Streak Tests
         run: |
-          poetry run python backend/manage.py test authentication.test_streak.StreakSystemTestCase.test_user_with_one_flame_gets_two_flames_next_day -v 1
-          poetry run python backend/manage.py test authentication.test_streak.StreakSystemTestCase.test_user_with_one_flame_no_two_flames_same_day -v 1
+          poetry run python backend/manage.py test core.test_streak.StreakSystemTestCase.test_user_with_one_flame_gets_two_flames_next_day -v 1
+          poetry run python backend/manage.py test core.test_streak.StreakSystemTestCase.test_user_with_one_flame_no_two_flames_same_day -v 1
 
       - name: 🔍 Code Syntax Check
         run: |
-          poetry run python -m py_compile backend/authentication/utils.py
-          poetry run python -m py_compile backend/authentication/test_streak.py
-          poetry run python -m py_compile backend/authentication/views.py
+          poetry run python -m py_compile backend/core/utils.py
+          poetry run python -m py_compile backend/core/test_streak.py
+          poetry run python -m py_compile backend/core/views.py
 
       - name: ✅ Pre-commit Summary
         run: |
