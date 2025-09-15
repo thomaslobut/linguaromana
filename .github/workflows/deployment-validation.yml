@@ -26,7 +26,7 @@ jobs:
 
     steps:
       - name: 📥 Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: 🐍 Setup Python
         id: setup-python
@@ -44,14 +44,14 @@ jobs:
 
       - name: 📦 Load cached venv
         id: cached-poetry-dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: .venv
           key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
 
       - name: 📦 Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --no-ansi
+        run: poetry install --no-root --no-interaction --no-ansi
 
       - name: 🔧 Setup environment
         run: |
@@ -61,21 +61,22 @@ jobs:
 
       - name: 🧪 Run deployment validation tests
         run: |
-          poetry run python run_deployment_tests.py
+          cd backend
+          poetry run python ../run_deployment_tests.py
         env:
           SECRET_KEY: ${{ env.SECRET_KEY }}
           DATABASE_URL: ${{ env.DATABASE_URL }}
 
       - name: 📊 Upload test reports
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-reports
           path: backend/test-reports/
 
       - name: 💬 Comment PR
         if: failure() && github.event_name == 'pull_request'
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           script: |
             github.rest.issues.createComment({
@@ -92,7 +93,7 @@ jobs:
 
     steps:
       - name: 📥 Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: 🐍 Setup Python
         id: setup-python-smoke
@@ -110,18 +111,19 @@ jobs:
 
       - name: 📦 Load cached venv
         id: cached-poetry-dependencies-smoke
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: .venv
           key: venv-${{ runner.os }}-${{ steps.setup-python-smoke.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
 
       - name: 📦 Install dependencies
         if: steps.cached-poetry-dependencies-smoke.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --no-ansi
+        run: poetry install --no-root --no-interaction --no-ansi
 
       - name: 💨 Quick validation
         run: |
-          poetry run python run_deployment_tests.py --fast
+          cd backend
+          poetry run python ../run_deployment_tests.py --fast
         env:
           SECRET_KEY: "test-secret-for-quick-validation"
 
@@ -131,7 +133,7 @@ jobs:
 
     steps:
       - name: 📥 Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: 🐍 Setup Python
         id: setup-python-security
@@ -148,7 +150,7 @@ jobs:
 
       - name: 📦 Install dependencies and security tools
         run: |
-          poetry install --no-interaction --no-ansi
+          poetry install --no-root --no-interaction --no-ansi
           poetry add --group dev safety bandit
 
       - name: 🔒 Security audit

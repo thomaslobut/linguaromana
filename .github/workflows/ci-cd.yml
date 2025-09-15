@@ -31,14 +31,14 @@ jobs:
 
       - name: 🔧 Load cached venv
         id: cached-poetry-dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: .venv
           key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
 
       - name: 📦 Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --only=main --no-interaction
+        run: poetry install --only=main --no-root --no-interaction
 
       - name: 🔧 Setup Django
         run: |
@@ -134,7 +134,7 @@ jobs:
         uses: actions/configure-pages@v4
 
       - name: 📄 Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: "."
 
