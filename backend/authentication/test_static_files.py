@@ -15,7 +15,7 @@ class StaticFilesDeploymentTest(StaticLiveServerTestCase):
         """Test that the main CSS file is accessible via static URL."""
         # Test the main styles.css file
         css_url = f"{self.live_server_url}/static/styles.css"
-        response = requests.get(css_url)
+        response = requests.get(css_url, timeout=10)
 
         self.assertEqual(
             response.status_code,
@@ -89,6 +89,3 @@ class StaticFilesUnitTest(TestCase):
                 expected_storage,
                 f"Production should use {expected_storage} for static files",
             )
-
-
-
