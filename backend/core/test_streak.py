@@ -280,7 +280,7 @@ class StreakIntegrationTestCase(TestCase):
     def test_quiz_submission_updates_streak(self):
         """Test that submitting a quiz properly updates streak"""
         # Create a quiz result (simulating quiz submission)
-        quiz_result = UserQuizResult.objects.create(
+        UserQuizResult.objects.create(
             user=self.user, article=self.article, score=80, points_earned=30
         )
 

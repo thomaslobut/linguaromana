@@ -3,7 +3,6 @@ from datetime import date, timedelta
 
 from django.contrib.auth.models import User
 from django.test import Client, TestCase
-from django.urls import reverse
 
 from .models import (
     Article,
@@ -12,7 +11,6 @@ from .models import (
     QuizQuestion,
     Word,
     WordDefinition,
-    WordTranslation,
 )
 
 
@@ -267,7 +265,7 @@ class ContentManagementTestCase(TestCase):
         )
 
         # 3. Create quiz questions linked to definitions
-        quiz1 = QuizQuestion.objects.create(
+        QuizQuestion.objects.create(
             article=article,
             word_definition=grammar_def,
             question_text="What is grammar?",
@@ -279,7 +277,7 @@ class ContentManagementTestCase(TestCase):
             question_type="vocabulary",
         )
 
-        quiz2 = QuizQuestion.objects.create(
+        QuizQuestion.objects.create(
             article=article,
             word_definition=vocab_def,
             question_text="What is vocabulary?",
@@ -308,7 +306,7 @@ class ContentManagementTestCase(TestCase):
             self.assertIsNotNone(quiz.word_definition.word)
 
             # Check reverse relationship through ArticleWord
-            article_word = ArticleWord.objects.get(
+            ArticleWord.objects.get(
                 article=article, word=quiz.word_definition.word
             )
             # Note: Relationship between ArticleWord and QuizQuestion verified through Article

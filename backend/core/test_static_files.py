@@ -5,7 +5,7 @@ Tests for static files serving - ensures CSS and other assets load properly.
 import requests
 from django.conf import settings
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
-from django.test import LiveServerTestCase, TestCase
+from django.test import TestCase
 
 
 class StaticFilesDeploymentTest(StaticLiveServerTestCase):

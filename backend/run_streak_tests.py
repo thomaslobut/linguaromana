@@ -6,7 +6,7 @@ Usage:
     python run_streak_tests.py
 
 Or from the backend directory:
-    python manage.py test authentication.test_streak
+    python manage.py test core.test_streak
 """
 
 import os
@@ -35,8 +35,8 @@ if __name__ == "__main__":
     # Run specific streak tests
     failures = test_runner.run_tests(
         [
-            "authentication.test_streak.StreakSystemTestCase",
-            "authentication.test_streak.StreakIntegrationTestCase",
+            "core.test_streak.StreakSystemTestCase",
+            "core.test_streak.StreakIntegrationTestCase",
         ]
     )
 
