@@ -28,14 +28,14 @@ jobs:
 
       - name: 🔧 Load cached venv
         id: cached-poetry-dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: .venv
           key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
 
       - name: 📦 Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --only=main --no-interaction
+        run: poetry install --only=main --no-root --no-interaction
 
       - name: 🔧 Quick Django Setup
         run: |
@@ -44,13 +44,13 @@ jobs:
 
       - name: ⚡ Quick Streak Tests
         run: |
-          poetry run python backend/manage.py test core.tests.test_streak.StreakSystemTestCase.test_user_with_one_flame_gets_two_flames_next_day -v 1
-          poetry run python backend/manage.py test core.tests.test_streak.StreakSystemTestCase.test_user_with_one_flame_no_two_flames_same_day -v 1
+          poetry run python backend/manage.py test test_streak.StreakSystemTestCase.test_user_with_one_flame_gets_two_flames_next_day -v 1
+          poetry run python backend/manage.py test test_streak.StreakSystemTestCase.test_user_with_one_flame_no_two_flames_same_day -v 1
 
       - name: 🔍 Code Syntax Check
         run: |
           poetry run python -m py_compile backend/core/utils.py
-          poetry run python -m py_compile backend/core/test_streak.py
+          poetry run python -m py_compile backend/test_streak.py
           poetry run python -m py_compile backend/core/views.py
 
       - name: ✅ Pre-commit Summary
