@@ -14,6 +14,7 @@ import django
 from django.conf import settings
 from django.test.utils import get_runner
 
+
 def setup_django():
     """Setup Django environment"""
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -33,9 +34,9 @@ def run_ui_functionality_tests():
 
     # Run specific test classes for UI functionality
     test_labels = [
-        "authentication.test_articles_vocabulary.WordManagementTestCase",
-        "authentication.test_articles_vocabulary.ArchiveReadingTestCase", 
-        "authentication.test_articles_vocabulary.IntegrationUITestCase",
+        "core.tests.LinguaRomanaModelsTestCase",
+        "core.tests.LinguaRomanaAPITestCase",
+        "core.tests.ContentManagementTestCase",
     ]
 
     failures = test_runner.run_tests(test_labels)

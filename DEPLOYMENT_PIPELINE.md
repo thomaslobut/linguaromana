@@ -81,7 +81,7 @@ scripts/
 backend/
 ├── run_streak_tests.py    # Tests de flammes
 ├── run_all_tests.py       # Tests complets
-└── requirements.txt       # Dépendances Python
+└── (dépendances gérées par Poetry via pyproject.toml)
 ```
 
 ## 🔍 Tests Exécutés dans la Pipeline
@@ -89,8 +89,8 @@ backend/
 ### Tests de Streak (Critiques)
 ```bash
 # Tests des règles principales
-python manage.py test authentication.test_streak.StreakSystemTestCase.test_user_with_one_flame_gets_two_flames_next_day
-python manage.py test authentication.test_streak.StreakSystemTestCase.test_user_with_one_flame_no_two_flames_same_day
+python manage.py test core.tests.test_streak.StreakSystemTestCase.test_user_with_one_flame_gets_two_flames_next_day
+python manage.py test core.tests.test_streak.StreakSystemTestCase.test_user_with_one_flame_no_two_flames_same_day
 
 # Tests complets (10 tests)
 python run_streak_tests.py
@@ -99,7 +99,7 @@ python run_streak_tests.py
 ### Tests Django Complets
 ```bash
 # Tous les tests de l'app authentication
-python manage.py test authentication
+python manage.py test
 
 # Avec migrations et setup
 python run_all_tests.py
@@ -159,14 +159,14 @@ Quand tous les tests passent :
 ### Avant de Pousser du Code
 
 ```bash
-# Script automatique recommandé
+# Script automatique recommandé (utilise Poetry)
 ./scripts/test-before-deploy.sh
 
-# Ou étapes manuelles :
+# Ou étapes manuelles avec Poetry :
+poetry install --only=main
 cd backend
-source venv/bin/activate
-python run_streak_tests.py
-python manage.py test authentication
+poetry run python run_streak_tests.py
+poetry run python manage.py test authentication
 cd .. && node -c script.js
 ```
 

@@ -1,0 +1,354 @@
+# Configuration GitLab CI pour LinguaRomana
+# ==========================================
+
+stages:
+  - validate
+  - test
+  - security
+  - deploy
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  SECRET_KEY: "gitlab-ci-test-secret-key"
+  DEBUG: "False"
+
+cache:
+  paths:
+    - .cache/pip/
+    - backend/venv/
+
+before_script:
+  - python3 --version
+  - pip3 install --upgrade pip
+
+# =================================
+# STAGE: VALIDATION
+# =================================
+
+🔍 Validation Format:
+  stage: validate
+  image: python:3.9
+  services:
+    - postgres:13
+  variables:
+    POSTGRES_DB: linguaromana_test
+    POSTGRES_USER: linguaromana
+    POSTGRES_PASSWORD: linguaromana_test
+    DATABASE_URL: "postgresql://linguaromana:linguaromana_test@postgres/linguaromana_test"
+  script:
+    - echo "🧪 Validation du format de page..."
+    - cd backend && pip3 install -r requirements.txt
+    - pip3 install beautifulsoup4
+    - cd ..
+    - python3 run_deployment_tests.py
+  artifacts:
+    when: always
+    reports:
+      junit: backend/test-reports/junit.xml
+    paths:
+      - backend/test-reports/
+    expire_in: 1 week
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+💨 Tests Rapides:
+  stage: validate
+  image: python:3.9
+  script:
+    - echo "💨 Tests de fumée..."
+    - cd backend && pip3 install -r requirements.txt
+    - pip3 install beautifulsoup4
+    - cd ..
+    - python3 run_deployment_tests.py --fast
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH != "main"
+
+# =================================
+# STAGE: TESTS
+# =================================
+
+🧪 Tests Complets:
+  stage: test
+  image: python:3.9
+  services:
+    - postgres:13
+  variables:
+    POSTGRES_DB: linguaromana_test
+    POSTGRES_USER: linguaromana
+    POSTGRES_PASSWORD: linguaromana_test
+    DATABASE_URL: "postgresql://linguaromana:linguaromana_test@postgres/linguaromana_test"
+  script:
+    - echo "🧪 Tests complets de déploiement..."
+    - cd backend && pip3 install -r requirements.txt
+    - pip3 install beautifulsoup4 coverage
+    - cd ..
+    - python3 run_deployment_tests.py
+  coverage: '/TOTAL.*\s+(\d+%)$/'
+  artifacts:
+    when: always
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: backend/coverage.xml
+    paths:
+      - backend/htmlcov/
+    expire_in: 1 week
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+
+# =================================
+# STAGE: SECURITY
+# =================================
+
+🔒 Sécurité:
+  stage: security
+  image: python:3.9
+  script:
+    - echo "🔒 Vérification sécurité..."
+    - cd backend && pip3 install -r requirements.txt
+    - pip3 install safety bandit
+    - safety check --json > safety-report.json || true
+    - bandit -r . -x "*/tests*,*/venv*" -f json -o bandit-report.json || true
+  artifacts:
+    when: always
+    paths:
+      - backend/safety-report.json
+      - backend/bandit-report.json
+    expire_in: 1 week
+  allow_failure: true
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+# =================================
+# STAGE: DEPLOY
+# =================================
+
+🚀 Deploy Heroku Production:
+  stage: deploy
+  image: ruby:3.1-alpine
+  before_script:
+    - apk add --no-cache git curl bash
+    - gem install dpl
+    - git config --global user.email "ci@linguaromana.com"
+    - git config --global user.name "GitLab CI"
+  script:
+    - echo "🚀 Déploiement automatique sur Heroku..."
+    - cd backend && python3 run_deployment_tests.py
+    - echo "✅ Tests passés, déploiement en cours..."
+    - cd ..
+    - dpl --provider=heroku --app=$HEROKU_APP_NAME --api-key=$HEROKU_API_KEY --strategy=git
+    - echo "🎉 DÉPLOYÉ SUR HEROKU: https://$HEROKU_APP_NAME.herokuapp.com"
+  environment:
+    name: production
+    url: https://$HEROKU_APP_NAME.herokuapp.com
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: on_success
+  dependencies:
+    - 🧪 Tests Complets
+
+🧪 Deploy Heroku Staging:
+  stage: deploy
+  image: ruby:3.1-alpine
+  before_script:
+    - apk add --no-cache git curl bash
+    - gem install dpl
+    - git config --global user.email "ci@linguaromana.com"
+    - git config --global user.name "GitLab CI"
+  script:
+    - echo "🧪 Déploiement staging sur Heroku..."
+    - cd backend && python3 run_deployment_tests.py --fast
+    - echo "✅ Tests rapides passés, déploiement staging..."
+    - cd ..
+    - dpl --provider=heroku --app=$HEROKU_STAGING_APP_NAME --api-key=$HEROKU_API_KEY --strategy=git
+    - echo "🎉 STAGING DÉPLOYÉ: https://$HEROKU_STAGING_APP_NAME.herokuapp.com"
+  environment:
+    name: staging
+    url: https://$HEROKU_STAGING_APP_NAME.herokuapp.com
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"
+      when: on_success
+  dependencies:
+    - 💨 Tests Rapides
+
+🔄 Deploy Heroku CLI:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache curl bash git
+    - curl https://cli-assets.heroku.com/install.sh | sh
+    - echo $HEROKU_API_KEY | heroku auth:token
+  script:
+    - echo "🔄 Déploiement avec Heroku CLI..."
+    - cd backend && python3 run_deployment_tests.py
+    - cd ..
+    - git remote add heroku https://heroku:$HEROKU_API_KEY@git.heroku.com/$HEROKU_APP_NAME.git || true
+    - git push heroku HEAD:main
+    - heroku run python backend/manage.py migrate --app $HEROKU_APP_NAME
+    - heroku run python backend/manage.py collectstatic --noinput --app $HEROKU_APP_NAME
+    - echo "✅ HEROKU CLI DÉPLOYÉ"
+  environment:
+    name: heroku-production
+    url: https://$HEROKU_APP_NAME.herokuapp.com
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" && $DEPLOY_METHOD == "cli"
+      when: on_success
+
+📊 Post-Deploy Health Check:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache curl jq
+  script:
+    - echo "📊 Vérification santé post-déploiement..."
+    - APP_URL="https://$HEROKU_APP_NAME.herokuapp.com"
+    - echo "🔍 Test de l'URL: $APP_URL"
+
+    # Attendre que l'app soit prête
+    - for i in $(seq 1 20); do
+      if curl -f -s "$APP_URL" > /dev/null; then
+      echo "✅ Application en ligne";
+      break;
+      fi;
+      echo "⏳ Tentative $i/20... En attente";
+      sleep 15;
+      done
+
+    # Tester l'API
+    - API_URL="$APP_URL/api/latest-comprehensive-article/"
+    - echo "🧪 Test API: $API_URL"
+    - curl -f -s "$API_URL" || echo "⚠️ API non accessible (normal si pas de données)"
+
+    # Tester l'admin
+    - ADMIN_URL="$APP_URL/admin/"
+    - echo "🛠️ Test Admin: $ADMIN_URL"
+    - curl -f -s "$ADMIN_URL" > /dev/null && echo "✅ Admin accessible" || echo "⚠️ Admin non accessible"
+
+    - echo "🎉 Vérifications terminées"
+  environment:
+    name: production
+    url: https://$HEROKU_APP_NAME.herokuapp.com
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: on_success
+  dependencies: []
+
+# =================================
+# JOBS CONDITIONNELS
+# =================================
+
+📋 Validation Format Seul:
+  stage: validate
+  image: python:3.9
+  script:
+    - echo "📋 Validation format uniquement..."
+    - cd backend && pip3 install -r requirements.txt
+    - pip3 install beautifulsoup4
+    - python3 manage.py test core.tests.tests_deployment.PageFormatDeploymentTest.test_home_page_structure_critical --verbosity=2
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[format-only\]/
+
+🌐 Validation API Seule:
+  stage: validate
+  image: python:3.9
+  services:
+    - postgres:13
+  variables:
+    POSTGRES_DB: linguaromana_test
+    POSTGRES_USER: linguaromana
+    POSTGRES_PASSWORD: linguaromana_test
+    DATABASE_URL: "postgresql://linguaromana:linguaromana_test@postgres/linguaromana_test"
+  script:
+    - echo "🌐 Validation API uniquement..."
+    - cd backend && pip3 install -r requirements.txt
+    - pip3 install beautifulsoup4
+    - python3 manage.py migrate
+    - python3 manage.py test core.tests.tests_deployment.PageFormatDeploymentTest.test_comprehensive_article_api_critical --verbosity=2
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[api-only\]/
+
+# =================================
+# NOTIFICATIONS
+# =================================
+
+📱 Notification Deployment Success:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache curl
+  script:
+    - echo "📱 Envoi des notifications de déploiement..."
+
+    # Notification Slack (si configuré)
+    - |
+      if [ -n "$SLACK_WEBHOOK_URL" ]; then
+        curl -X POST -H 'Content-type: application/json' \
+        --data "{
+          \"text\": \"🚀 *LinguaRomana déployé avec succès!*\",
+          \"attachments\": [{
+            \"color\": \"good\",
+            \"fields\": [
+              {\"title\": \"🌐 Application\", \"value\": \"https://$HEROKU_APP_NAME.herokuapp.com\", \"short\": false},
+              {\"title\": \"🛠️ Admin\", \"value\": \"https://$HEROKU_APP_NAME.herokuapp.com/admin\", \"short\": true},
+              {\"title\": \"📊 API\", \"value\": \"https://$HEROKU_APP_NAME.herokuapp.com/api/\", \"short\": true},
+              {\"title\": \"🔀 Branche\", \"value\": \"$CI_COMMIT_BRANCH\", \"short\": true},
+              {\"title\": \"📝 Commit\", \"value\": \"$CI_COMMIT_SHORT_SHA\", \"short\": true},
+              {\"title\": \"👤 Auteur\", \"value\": \"$GITLAB_USER_NAME\", \"short\": true},
+              {\"title\": \"⏰ Heure\", \"value\": \"$(date)\", \"short\": true}
+            ]
+          }]
+        }" $SLACK_WEBHOOK_URL
+        echo "✅ Notification Slack envoyée"
+      else
+        echo "⚠️ SLACK_WEBHOOK_URL non configuré"
+      fi
+
+    # Notification par email (si configuré)
+    - |
+      if [ -n "$NOTIFICATION_EMAIL" ]; then
+        echo "📧 Notification email..."
+        # Ici vous pouvez ajouter votre service d'email
+        echo "Email de notification à implémenter"
+      fi
+
+    - echo "📱 Notifications terminées"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: on_success
+  dependencies: []
+
+📱 Notification Deployment Failed:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache curl
+  script:
+    - echo "📱 Envoi des notifications d'échec..."
+
+    - |
+      if [ -n "$SLACK_WEBHOOK_URL" ]; then
+        curl -X POST -H 'Content-type: application/json' \
+        --data "{
+          \"text\": \"❌ *Échec du déploiement LinguaRomana*\",
+          \"attachments\": [{
+            \"color\": \"danger\",
+            \"fields\": [
+              {\"title\": \"🔀 Branche\", \"value\": \"$CI_COMMIT_BRANCH\", \"short\": true},
+              {\"title\": \"📝 Commit\", \"value\": \"$CI_COMMIT_SHORT_SHA\", \"short\": true},
+              {\"title\": \"👤 Auteur\", \"value\": \"$GITLAB_USER_NAME\", \"short\": true},
+              {\"title\": \"⏰ Heure\", \"value\": \"$(date)\", \"short\": true},
+              {\"title\": \"🔗 Pipeline\", \"value\": \"$CI_PIPELINE_URL\", \"short\": false}
+            ]
+          }]
+        }" $SLACK_WEBHOOK_URL
+        echo "✅ Notification d'échec Slack envoyée"
+      fi
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: on_failure
+  dependencies: []

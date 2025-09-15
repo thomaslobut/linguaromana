@@ -1,0 +1,16 @@
+# Configuration Heroku avec Docker
+# =================================
+
+build:
+  docker:
+    web: Dockerfile
+
+release:
+  image: web
+  command:
+    - cd backend && python manage.py migrate
+    - cd backend && python manage.py collectstatic --noinput
+
+run:
+  web: cd backend && gunicorn linguaromana_backend.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 120
+

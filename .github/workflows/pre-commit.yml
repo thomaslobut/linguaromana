@@ -18,30 +18,40 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: 📦 Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+
+      - name: 🔧 Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+
       - name: 📦 Install dependencies
-        run: |
-          cd backend
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --only=main --no-root --no-interaction
 
       - name: 🔧 Quick Django Setup
         run: |
-          cd backend
-          python manage.py makemigrations --check --dry-run || python manage.py makemigrations
-          python manage.py migrate
+          poetry run python backend/manage.py makemigrations --check --dry-run || poetry run python backend/manage.py makemigrations
+          poetry run python backend/manage.py migrate
 
       - name: ⚡ Quick Streak Tests
         run: |
-          cd backend
-          python manage.py test authentication.test_streak.StreakSystemTestCase.test_user_with_one_flame_gets_two_flames_next_day -v 1
-          python manage.py test authentication.test_streak.StreakSystemTestCase.test_user_with_one_flame_no_two_flames_same_day -v 1
+          poetry run python backend/manage.py test test_streak.StreakSystemTestCase.test_user_with_one_flame_gets_two_flames_next_day -v 1
+          poetry run python backend/manage.py test test_streak.StreakSystemTestCase.test_user_with_one_flame_no_two_flames_same_day -v 1
 
       - name: 🔍 Code Syntax Check
         run: |
-          cd backend
-          python -m py_compile authentication/utils.py
-          python -m py_compile authentication/test_streak.py
-          python -m py_compile authentication/views.py
+          poetry run python -m py_compile backend/core/utils.py
+          poetry run python -m py_compile backend/test_streak.py
+          poetry run python -m py_compile backend/core/views.py
 
       - name: ✅ Pre-commit Summary
         run: |

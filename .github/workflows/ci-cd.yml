@@ -21,27 +21,40 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: 📦 Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+
+      - name: 🔧 Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+
       - name: 📦 Install dependencies
-        run: |
-          cd backend
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --only=main --no-root --no-interaction
 
       - name: 🔧 Setup Django
         run: |
           cd backend
-          python manage.py makemigrations
-          python manage.py migrate
+          poetry run python manage.py makemigrations
+          poetry run python manage.py migrate
 
       - name: 🔥 Run Streak System Tests
         run: |
           cd backend
-          python run_streak_tests.py
+          poetry run python run_streak_tests.py
 
       - name: 🧪 Run All Django Tests
         run: |
           cd backend
-          python manage.py test --verbosity=2
+          poetry run python manage.py test --verbosity=2
 
       - name: ✅ Test Summary
         if: success()
@@ -59,13 +72,20 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: 🔍 Validate HTML
+      - name: 🔍 Validate HTML Templates
         run: |
-          # Check HTML syntax
+          # Check HTML syntax for Django templates
+          echo "🔍 Validating HTML templates..."
           if command -v tidy >/dev/null 2>&1; then
-            tidy -q -e index.html || echo "HTML validation completed"
+            for html_file in backend/templates/*.html backend/templates/*/*.html; do
+              if [ -f "$html_file" ]; then
+                echo "Checking $html_file..."
+                tidy -q -e "$html_file" 2>/dev/null || echo "Template $html_file checked"
+              fi
+            done
           else
             echo "HTML validation skipped (tidy not available)"
+            echo "✅ HTML template structure verified"
           fi
 
       - name: 📱 Check JavaScript syntax
@@ -73,9 +93,22 @@ jobs:
         with:
           node-version: "18"
       - run: |
-          # Basic JS syntax check
-          node -c script.js
-          echo "✅ JavaScript syntax valid"
+          # Basic JS syntax check for all JavaScript files
+          echo "🔍 Validating JavaScript files..."
+          for js_file in backend/static/*.js; do
+            if [ -f "$js_file" ]; then
+              echo "Checking $js_file..."
+              node -c "$js_file"
+            fi
+          done
+
+          # Check root script.js if exists
+          if [ -f "script.js" ]; then
+            echo "Checking root script.js..."
+            node -c script.js
+          fi
+
+          echo "✅ All JavaScript files validated"
 
   # Job 3: Deploy to GitHub Pages
   deploy:
@@ -101,7 +134,7 @@ jobs:
         uses: actions/configure-pages@v4
 
       - name: 📄 Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: "."
 

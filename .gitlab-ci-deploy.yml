@@ -1,0 +1,303 @@
+# Configuration GitLab CI avec Déploiement Automatique
+# =====================================================
+
+stages:
+  - validate
+  - test
+  - security
+  - build
+  - deploy-staging
+  - deploy-production
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  SECRET_KEY: "gitlab-ci-test-secret-key"
+  DEBUG: "False"
+  # Variables Docker
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: "/certs"
+  CONTAINER_NAME: "linguaromana-app"
+  IMAGE_TAG: "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"
+
+cache:
+  paths:
+    - .cache/pip/
+    - backend/venv/
+    - node_modules/
+
+before_script:
+  - python3 --version
+  - pip3 install --upgrade pip
+
+# =================================
+# STAGE: VALIDATION
+# =================================
+
+🔍 Validation Format:
+  stage: validate
+  image: python:3.9
+  services:
+    - postgres:13
+  variables:
+    POSTGRES_DB: linguaromana_test
+    POSTGRES_USER: linguaromana
+    POSTGRES_PASSWORD: linguaromana_test
+    DATABASE_URL: "postgresql://linguaromana:linguaromana_test@postgres/linguaromana_test"
+  script:
+    - echo "🧪 Validation du format de page..."
+    - cd backend && pip3 install -r requirements.txt
+    - pip3 install beautifulsoup4
+    - cd ..
+    - python3 run_deployment_tests.py
+  artifacts:
+    when: always
+    reports:
+      junit: backend/test-reports/junit.xml
+    paths:
+      - backend/test-reports/
+    expire_in: 1 week
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+💨 Tests Rapides:
+  stage: validate
+  image: python:3.9
+  script:
+    - echo "💨 Tests de fumée..."
+    - cd backend && pip3 install -r requirements.txt
+    - pip3 install beautifulsoup4
+    - cd ..
+    - python3 run_deployment_tests.py --fast
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH != "main"
+
+# =================================
+# STAGE: TESTS
+# =================================
+
+🧪 Tests Complets:
+  stage: test
+  image: python:3.9
+  services:
+    - postgres:13
+  variables:
+    POSTGRES_DB: linguaromana_test
+    POSTGRES_USER: linguaromana
+    POSTGRES_PASSWORD: linguaromana_test
+    DATABASE_URL: "postgresql://linguaromana:linguaromana_test@postgres/linguaromana_test"
+  script:
+    - echo "🧪 Tests complets de déploiement..."
+    - cd backend && pip3 install -r requirements.txt
+    - pip3 install beautifulsoup4 coverage
+    - cd ..
+    - python3 run_deployment_tests.py
+  coverage: '/TOTAL.*\s+(\d+%)$/'
+  artifacts:
+    when: always
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: backend/coverage.xml
+    paths:
+      - backend/htmlcov/
+    expire_in: 1 week
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+
+# =================================
+# STAGE: SECURITY
+# =================================
+
+🔒 Sécurité:
+  stage: security
+  image: python:3.9
+  script:
+    - echo "🔒 Vérification sécurité..."
+    - cd backend && pip3 install -r requirements.txt
+    - pip3 install safety bandit
+    - safety check --json > safety-report.json || true
+    - bandit -r . -x "*/tests*,*/venv*" -f json -o bandit-report.json || true
+  artifacts:
+    when: always
+    paths:
+      - backend/safety-report.json
+      - backend/bandit-report.json
+    expire_in: 1 week
+  allow_failure: true
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+# =================================
+# STAGE: BUILD
+# =================================
+
+📦 Build Docker Image:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - echo "📦 Construction de l'image Docker..."
+    - docker build -t $IMAGE_TAG .
+    - docker push $IMAGE_TAG
+    - echo "✅ Image Docker créée: $IMAGE_TAG"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+
+📋 Build Static Files:
+  stage: build
+  image: python:3.9
+  script:
+    - echo "📋 Génération des fichiers statiques..."
+    - cd backend && pip3 install -r requirements.txt
+    - python3 manage.py collectstatic --noinput
+    - tar -czf ../static-files.tar.gz staticfiles/
+  artifacts:
+    paths:
+      - static-files.tar.gz
+    expire_in: 1 hour
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+
+# =================================
+# STAGE: DEPLOY STAGING
+# =================================
+
+🧪 Deploy Staging (Auto):
+  stage: deploy-staging
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache curl openssh-client git
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan -H $STAGING_HOST >> ~/.ssh/known_hosts
+  script:
+    - echo "🧪 Déploiement automatique en staging..."
+    - ./scripts/deploy.sh staging
+    - echo "✅ STAGING DÉPLOYÉ: $STAGING_URL"
+  environment:
+    name: staging
+    url: $STAGING_URL
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"
+      when: on_success
+  dependencies:
+    - 📦 Build Docker Image
+    - 📋 Build Static Files
+
+# =================================
+# STAGE: DEPLOY PRODUCTION
+# =================================
+
+🚀 Deploy Production (Auto):
+  stage: deploy-production
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache curl openssh-client git
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan -H $PRODUCTION_HOST >> ~/.ssh/known_hosts
+  script:
+    - echo "🚀 Déploiement automatique en production..."
+    - ./scripts/deploy.sh production
+    - ./scripts/health_check.sh $PRODUCTION_URL
+    - echo "✅ PRODUCTION DÉPLOYÉE: $PRODUCTION_URL"
+  environment:
+    name: production
+    url: $PRODUCTION_URL
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: on_success
+  dependencies:
+    - 📦 Build Docker Image
+    - 📋 Build Static Files
+
+🚀 Deploy Heroku:
+  stage: deploy-production
+  image: ruby:alpine
+  before_script:
+    - apk add --no-cache git curl
+    - gem install dpl
+  script:
+    - echo "🚀 Déploiement Heroku..."
+    - dpl --provider=heroku --app=$HEROKU_APP_NAME --api-key=$HEROKU_API_KEY
+    - echo "✅ HEROKU DÉPLOYÉ: https://$HEROKU_APP_NAME.herokuapp.com"
+  environment:
+    name: heroku-production
+    url: https://$HEROKU_APP_NAME.herokuapp.com
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" && $DEPLOY_PLATFORM == "heroku"
+      when: on_success
+
+🚀 Deploy DigitalOcean:
+  stage: deploy-production
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache curl docker openssh-client
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - echo "🚀 Déploiement DigitalOcean..."
+    - ./scripts/deploy_digitalocean.sh
+    - echo "✅ DIGITALOCEAN DÉPLOYÉ: $DO_APP_URL"
+  environment:
+    name: digitalocean-production
+    url: $DO_APP_URL
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" && $DEPLOY_PLATFORM == "digitalocean"
+      when: on_success
+
+# =================================
+# ROLLBACK (en cas de problème)
+# =================================
+
+⏪ Rollback Production:
+  stage: deploy-production
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache curl openssh-client
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan -H $PRODUCTION_HOST >> ~/.ssh/known_hosts
+  script:
+    - echo "⏪ Rollback en cours..."
+    - ./scripts/rollback.sh production
+    - echo "✅ ROLLBACK TERMINÉ"
+  environment:
+    name: production
+    url: $PRODUCTION_URL
+    action: stop
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: manual
+      allow_failure: false
+
+# =================================
+# NOTIFICATIONS
+# =================================
+
+📱 Notification Slack:
+  stage: deploy-production
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache curl
+  script:
+    - |
+      curl -X POST -H 'Content-type: application/json' \
+      --data "{\"text\":\"🚀 LinguaRomana déployé avec succès!\n✅ Version: $CI_COMMIT_SHA\n🌐 URL: $PRODUCTION_URL\"}" \
+      $SLACK_WEBHOOK_URL
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: on_success
+  dependencies: []

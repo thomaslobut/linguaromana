@@ -1,0 +1,160 @@
+name: 🚀 Validation Déploiement
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-format:
+    name: 📋 Validation Format Page
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: linguaromana
+          POSTGRES_PASSWORD: linguaromana_test
+          POSTGRES_DB: linguaromana_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        id: setup-python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: 📦 Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+
+      - name: 📦 Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+
+      - name: 📦 Install dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --no-root --no-interaction --no-ansi
+
+      - name: 🔧 Setup environment
+        run: |
+          echo "SECRET_KEY=test-secret-key-for-ci" >> $GITHUB_ENV
+          echo "DEBUG=False" >> $GITHUB_ENV
+          echo "DATABASE_URL=postgresql://linguaromana:linguaromana_test@localhost/linguaromana_test" >> $GITHUB_ENV
+
+      - name: 🧪 Run deployment validation tests
+        run: |
+          cd backend
+          poetry run python ../run_deployment_tests.py
+        env:
+          SECRET_KEY: ${{ env.SECRET_KEY }}
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+
+      - name: 📊 Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: backend/test-reports/
+
+      - name: 💬 Comment PR
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ **Tests de format de page échoués**\n\nLe format attendu "Article + Notes de grammaire" n\'est pas respecté. Vérifiez les logs ci-dessus.'
+            })
+
+  quick-smoke-test:
+    name: 💨 Tests de Fumée
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        id: setup-python-smoke
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: 📦 Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+
+      - name: 📦 Load cached venv
+        id: cached-poetry-dependencies-smoke
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python-smoke.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+
+      - name: 📦 Install dependencies
+        if: steps.cached-poetry-dependencies-smoke.outputs.cache-hit != 'true'
+        run: poetry install --no-root --no-interaction --no-ansi
+
+      - name: 💨 Quick validation
+        run: |
+          cd backend
+          poetry run python ../run_deployment_tests.py --fast
+        env:
+          SECRET_KEY: "test-secret-for-quick-validation"
+
+  security-check:
+    name: 🔒 Vérification Sécurité
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        id: setup-python-security
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: 📦 Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: 📦 Install dependencies and security tools
+        run: |
+          poetry install --no-root --no-interaction --no-ansi
+          poetry add --group dev safety bandit
+
+      - name: 🔒 Security audit
+        run: |
+          cd backend
+          poetry run safety scan
+          poetry run bandit -r . -x */tests*,*/venv*,*/__pycache__*

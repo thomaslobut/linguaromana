@@ -5,34 +5,37 @@ Système d'authentification Django pour l'application d'apprentissage des langue
 ## 🚀 Installation et Configuration
 
 ### 1. Prérequis
-- Python 3.8+
-- pip (gestionnaire de paquets Python)
+- Python 3.11+
+- Poetry (gestionnaire de dépendances moderne)
 
 ### 2. Installation
 
 ```bash
+# Installer Poetry si ce n'est pas fait
+curl -sSL https://install.python-poetry.org | python3 -
+
+# Depuis la racine du projet
+# Installer toutes les dépendances
+poetry install --only=main
+
+# Ou pour le développement (avec outils de dev)
+poetry install
+
 # Aller dans le dossier backend
 cd backend
 
-# Créer et activer l'environnement virtuel
-python3 -m venv venv
-source venv/bin/activate  # Sur Windows: venv\Scripts\activate
-
-# Installer les dépendances
-pip install -r requirements.txt
-
 # Effectuer les migrations
-python manage.py makemigrations
-python manage.py migrate
+poetry run python manage.py makemigrations
+poetry run python manage.py migrate
 
 # Créer les données initiales (articles, questions, utilisateurs de démo)
-python manage.py setup_initial_data
+poetry run python manage.py setup_initial_data
 
 # Créer un superutilisateur pour l'admin (optionnel)
-python manage.py createsuperuser
+poetry run python manage.py createsuperuser
 
 # Lancer le serveur de développement
-python manage.py runserver
+poetry run python manage.py runserver
 ```
 
 ### 3. Accès à l'application
@@ -62,6 +65,31 @@ backend/
 │   └── management/          # Commandes personnalisées
 ├── templates/               # Templates HTML
 └── static/                  # Fichiers statiques (CSS, JS)
+```
+
+### 📦 Gestion des dépendances avec Poetry
+
+Ce projet utilise **Poetry** pour la gestion moderne des dépendances Python :
+
+```bash
+# Installation des dépendances
+poetry install --only=main       # Production uniquement
+poetry install                   # Avec outils de développement
+
+# Ajouter une nouvelle dépendance
+poetry add django-extensions
+
+# Ajouter une dépendance de développement
+poetry add --group dev pytest
+
+# Mettre à jour les dépendances
+poetry update
+
+# Activer l'environnement virtuel
+poetry shell
+
+# Exécuter une commande dans l'environnement
+poetry run python manage.py runserver
 ```
 
 ### Modèles de données
@@ -257,5 +285,6 @@ LOGGING = {
 ---
 
 **Développé avec ❤️ pour l'apprentissage des langues romanes**
+
 
 

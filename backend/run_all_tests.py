@@ -52,8 +52,8 @@ def run_streak_tests():
 
     streak_failures = test_runner.run_tests(
         [
-            "authentication.test_streak.StreakSystemTestCase",
-            "authentication.test_streak.StreakIntegrationTestCase",
+            "core.tests.test_streak.StreakSystemTestCase",
+            "core.tests.test_streak.StreakIntegrationTestCase",
         ]
     )
 
@@ -80,7 +80,7 @@ def run_all_django_tests():
     TestRunner = get_runner(settings)
     test_runner = TestRunner(verbosity=1 if os.getenv("CI") else 2)
 
-    all_failures = test_runner.run_tests(["authentication"])
+    all_failures = test_runner.run_tests(["core"])
 
     if all_failures:
         print(f"\n❌ {all_failures} Django test(s) failed!")
@@ -129,10 +129,10 @@ def run_code_quality_checks():
         import py_compile
 
         python_files = [
-            "authentication/models.py",
-            "authentication/views.py",
-            "authentication/utils.py",
-            "authentication/test_streak.py",
+            "core/models.py",
+            "core/views.py",
+            "core/utils.py",
+            "core/test_streak.py",
         ]
 
         for file_path in python_files:
